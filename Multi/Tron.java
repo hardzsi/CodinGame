@@ -1,10 +1,8 @@
-import java.util.*;
-import java.io.*;
-import java.math.*;
 import java.awt.Point;
-import java.util.Random;
+import java.util.Scanner;
 import java.util.Vector;
 import java.util.HashSet;
+import java.util.List;
 import java.util.ArrayList;
 
 /**
@@ -17,10 +15,10 @@ class Player {
         Scanner in = new Scanner(System.in);       
         // Initializing values
         String move = "LEFT";                                               // Starting direction
-        String[] moves = new String[3];   
+        String[] moves = new String[3];                                     // Order of next moves according to strategy
         boolean firstRound = true;
         List<HashSet<Point>> reserved = new ArrayList<HashSet<Point>>();    // Set to store all reserved grid positions
-        Point actPos = new Point(-1, -1);                                   // Actual position of my bike (X1, Y1)
+        Point actP = new Point(-1, -1);                                     // Actual point/position of my bike (X1, Y1)
         // game loop
         while (true) {
             int N = in.nextInt();                                           // total number of players (2 to 4).
@@ -44,7 +42,7 @@ class Player {
                 if (i == P) {
                     reserved.get(i).add(p1);
                     System.err.println("Me    " + i + ":" + coords(p1) + " added");                    
-                    actPos.move(X1, Y1);
+                    actP.move(X1, Y1);
                 } else {
                     if (p1.getX() != -1) {
                         reserved.get(i).add(p1);
@@ -57,24 +55,23 @@ class Player {
                     }
                 }
             }
-            if (firstRound) { firstRound = false; }                         // Not to store X0, Y0 any more
+            if (firstRound) { firstRound = false; }                         // Store (X0, Y0) coords only first time
             // Determine possible next positions to step excluding bounds           
-            moves = curly_moves(move);                                      // Determine strategy
-            String nextMove = null;         
+            moves = curlyMoves(move);                                       // Set strategy
+            //String nextMove = null;         
             Vector<String> optMove = new Vector<>();                        // Store move options
             Vector<String> safeMove = new Vector<>();                       // Store moves considered safe (not go to pipe)
-            for (int i = 0; i < moves.length; ++i) {
-                nextMove = checkMove(moves[i], reserved, actPos, N);       // Return next move or 'null' if cannot move
-                if (nextMove != null) {
-                    optMove.add(nextMove);    
+            for (int i = 0; i < moves.length; ++i) {               
+                if (!hitWall(moves[i], actP) && !isReserved(getNextP(moves[i], actP), reserved, N)) {
+                    optMove.add(moves[i]);
                 }
             }
-            if (optMove == null) {
+            if (optMove.isEmpty()) {
                 System.err.println("OH, fuck! We lost. Waiting for timeout...");
             } else {
                 for (String m : optMove) {
                     System.err.println("opt.move: " + m);
-                    if (checkPipe(m, reserved, actPos, N) == "OK") {
+                    if (!isTrap(m, reserved, actP, N)) {
                         safeMove.add(m);
                         System.err.println("move " + m + " considered safe");
                     }
@@ -89,21 +86,22 @@ class Player {
         } // while()
     } // main()
     
+    // Return coordinates of p as string - used for debugging
     private static String coords(Point p) {
         return "[x=" + (int)p.getX() + ",y=" + (int)p.getY() + "]";  
     }
-    // Our strategy
-    private static String[] curly_moves(String move) {                  // Csiga
+    // Our strategy: csiga
+    private static String[] curlyMoves(String move) {
         String[] moves = null;
         switch (move) {
-            case "LEFT": moves = new String[] {"UP", "LEFT", "DOWN"}; break;
-            case "RIGHT":moves = new String[] {"DOWN", "RIGHT", "UP"}; break;
-            case "UP":   moves = new String[] {"RIGHT", "UP", "LEFT"}; break;
-            case "DOWN": moves = new String[] {"LEFT", "DOWN", "RIGHT"}; break;
+            case "LEFT" : moves = new String[] {"UP", "LEFT", "DOWN"}; break;
+            case "RIGHT": moves = new String[] {"DOWN", "RIGHT", "UP"}; break;
+            case "UP"   : moves = new String[] {"RIGHT", "UP", "LEFT"}; break;
+            case "DOWN" : moves = new String[] {"LEFT", "DOWN", "RIGHT"}; break;
         }
         return moves;
     }
-    // Return true if p reserved
+    // Returns true if p reserved
     private static boolean isReserved(Point p, List<HashSet<Point>> reserved, int N) {
         boolean allocated = false;
         for (int i = 0; i < N && !allocated; ++i) {
@@ -115,35 +113,33 @@ class Player {
         }
         return allocated;
     }
-    // Validate nextMove. If nextMove valid, returns it, otherwise returns null 
-    private static String checkMove(String nextMove, List<HashSet<Point>> reserved, Point actPos, int N) {
-        int X = (int)(actPos.getX());
-        int Y = (int)(actPos.getY());
-        if (nextMove == "LEFT") {    
-            if (X != 0 && !isReserved(new Point(X - 1, Y), reserved, N)) {
-                return "LEFT";
-            }
+    // Returns true if next move is within bounds, false otherwise
+    private static boolean hitWall(String nextMove, Point actP) {
+        int X = (int)(actP.getX());
+        int Y = (int)(actP.getY());
+        boolean ret = false;
+        switch(nextMove) {
+            case "LEFT" : if (X == 0) ret=true; break;
+            case "RIGHT": if (X == 29) ret=true; break;
+            case "UP"   : if (Y == 0) ret=true; break;
+            case "DOWN" : if (Y == 19) ret=true; break;
         }
-        if (nextMove == "RIGHT") {
-            if (X != 29 && !isReserved(new Point(X + 1, Y), reserved, N)) {
-                return "RIGHT";
-            }
-        }
-        if (nextMove == "UP") {     
-            if (Y != 0 && !isReserved(new Point(X, Y - 1), reserved, N)) {
-                return "UP";
-            }
-        }
-        if (nextMove == "DOWN") {     
-            if (Y != 19 && !isReserved(new Point(X, Y + 1), reserved, N)) {
-                return "DOWN";
-            }
+        return ret;
+    }
+    // Returns position of next move as a point
+    private static Point getNextP(String nextMove, Point actP) {
+        int X = (int)(actP.getX());
+        int Y = (int)(actP.getY());
+        switch(nextMove) {
+            case "LEFT" : return new Point(X - 1, Y);
+            case "RIGHT": return new Point(X + 1, Y);
+            case "UP"   : return new Point(X, Y - 1);
+            case "DOWN" : return new Point(X, Y + 1);
         }
         return null;
     }
-
-    private static String checkPipe(String nextMove, List<HashSet<Point>> reserved, Point actPos, int N) {
-        
-        return "OK";
+    // Check if next move would be considered as a trap
+    private static boolean isTrap(String nextMove, List<HashSet<Point>> reserved, Point actP, int N) {
+        return false;
     }
 }

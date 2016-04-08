@@ -14,14 +14,13 @@ import java.util.ArrayList;
 class Player {
 
     public static void main(String args[]) {
-        Scanner in = new Scanner(System.in);
+        Scanner in = new Scanner(System.in);       
         // Initializing values
-        String move = "LEFT";                                               // Default direction
+        String move = "LEFT";                                               // Starting direction
+        String[] moves = new String[3];   
         boolean firstRound = true;
         List<HashSet<Point>> reserved = new ArrayList<HashSet<Point>>();    // Set to store all reserved grid positions
         Point actPos = new Point(-1, -1);                                   // Actual position of my bike (X1, Y1)
-        Vector<Point> nextPos = new Vector<>();                             // Possible next positions to step
-        Random rand = new Random();
         // game loop
         while (true) {
             int N = in.nextInt();                                           // total number of players (2 to 4).
@@ -50,59 +49,121 @@ class Player {
                     if (p1.getX() != -1) {
                         reserved.get(i).add(p1);
                         System.err.println("Player" + i + ":" + coords(p1) + " added");   
+                    } else {
+                        if (reserved.get(i) != null) {
+                            System.err.println("Player" + i + " died. Removing its reserved locations.");
+                            reserved.set(i, null);                        
+                        }
                     }
                 }
             }
             if (firstRound) { firstRound = false; }                         // Not to store X0, Y0 any more
             // Determine possible next positions to step excluding bounds           
-            int X = (int)(actPos.getX());
-            int Y = (int)(actPos.getY());
-            if (move != "RIGHT" && X != 0) {
-                nextPos.add(new Point(X - 1, Y));
-            }
-            if (move != "LEFT" && X != 29) {
-                nextPos.add(new Point(X + 1, Y));
-            }
-            if (move != "DOWN" && Y != 0) {
-                nextPos.add(new Point(X, Y - 1));
-            }
-            if (move != "UP" && Y != 19) {
-                nextPos.add(new Point(X, Y + 1));
-            }
-            // Remove reserved locations from nextPos
-            Vector<Point> removables = new Vector<>();                  // Collect points to remove
-            for (Point p : nextPos) {
-                for (int j = 0; j < N; ++j) {
-                    if (reserved.get(j).contains(p)) {
-                        removables.add(p);
-                        System.err.println("removed: " + coords(p));
-                    }
+            moves = curly_moves(move);                                      // Determine strategy
+            String nextMove = null;          
+            Vector<String> optMove = new Vector<>();                        // Store move options
+            Vector<String> safeMove = new Vector<>();                       // Store moves considered safe (not go to pipe)
+            for (int i = 0; i < moves.length; ++i) {
+                nextMove = checkMove(moves[i], reserved, actPos, N);       // Return next move or 'null' if cannot move
+                if (nextMove != null) {
+                    optMove.add(nextMove);    
                 }
             }
-            nextPos.removeAll(removables);                              // Remove reserved points
-            // Display remaining directions
-            if (nextPos.size() == 0) {
+            if (optMove == null) {
                 System.err.println("OH, fuck! We lost. Waiting for timeout...");
             } else {
-                for (Point p : nextPos) {
-                    System.err.println("nextPos: " + coords(p));
+                for (String m : optMove) {
+                    System.err.println("opt.move: " + m);
+                    if (checkPipe(m, reserved, actPos) == "OK") {
+                        safeMove.add(m);
+                        System.err.println("move " + m + " considered safe");
+                    }
                 }
-                // Get a random direction out of nextPos
-                Point p = nextPos.get(rand.nextInt(nextPos.size()));
-                System.err.println("Our random move: " + coords(p));                    
-    
-                if (p.getX() != X) {
-                    move = (p.getX() > X ? "RIGHT" : "LEFT"); 
+                if (safeMove.isEmpty()) {
+                    move = optMove.firstElement();                          // Choose first from options                
                 } else {
-                    move = (p.getY() > Y ? "DOWN" : "UP");
+                    move = safeMove.firstElement();                         // Choose first safe move
                 }
-                nextPos.clear();
-                System.out.println(move);                               // A single line with UP, DOWN, LEFT or RIGHT                
+                System.out.println(move);                                   // A single line with UP, DOWN, LEFT or RIGHT                
             }
         } // while()
     } // main()
     
     private static String coords(Point p) {
         return "[x=" + (int)p.getX() + ",y=" + (int)p.getY() + "]";  
+    }
+    
+    private static String[] curly_moves(String move) {                  // Csiga
+        String[] moves = null;
+        switch (move) {
+            case "LEFT": moves = new String[] {"UP", "LEFT", "DOWN"}; break;
+            case "RIGHT":moves = new String[] {"DOWN", "RIGHT", "UP"}; break;
+            case "UP":   moves = new String[] {"RIGHT", "UP", "LEFT"}; break;
+            case "DOWN": moves = new String[] {"LEFT", "DOWN", "RIGHT"}; break;
+        }
+        return moves;
+    }
+    
+    private static String checkMove(String nextMove, List<HashSet<Point>> reserved, Point actPos, int N) {
+        int X = (int)(actPos.getX());
+        int Y = (int)(actPos.getY());
+        boolean allocated = false;
+        if (nextMove == "LEFT") {
+            allocated = false;           
+            if (X == 0) {
+                allocated = true;
+            } else {               
+                for (int i = 0; i < N && !allocated; ++i) {
+                    if (reserved.get(i) != null) {
+                        if (reserved.get(i).contains(new Point(X - 1, Y))) { allocated = true; }    
+                    }
+                }
+            }
+            if (!allocated) { return "LEFT"; }
+        }
+        if (nextMove == "RIGHT") {
+            if (X == 29) {
+                allocated = true;
+            } else {               
+                for (int i = 0; i < N && !allocated; ++i) {
+                    if (reserved.get(i) != null) {
+                        if (reserved.get(i).contains(new Point(X + 1, Y))) { allocated = true; }    
+                    }
+                }
+            }
+            if (!allocated) { return "RIGHT"; }
+        }
+        if (nextMove == "UP") {
+            allocated = false;           
+            if (Y == 0) {
+                allocated = true;
+            } else {               
+                for (int i = 0; i < N && !allocated; ++i) {
+                    if (reserved.get(i) != null) {
+                        if (reserved.get(i).contains(new Point(X, Y - 1))) { allocated = true; }    
+                    }
+                }
+            }
+            if (!allocated) { return "UP"; }
+        }
+        if (nextMove == "DOWN") {
+            allocated = false;           
+            if (Y == 19) {
+                allocated = true;
+            } else {               
+                for (int i = 0; i < N && !allocated; ++i) {
+                    if (reserved.get(i) != null) {
+                        if (reserved.get(i).contains(new Point(X, Y + 1))) { allocated = true; }    
+                    }
+                }
+            }
+            if (!allocated) { return "DOWN"; }
+        }
+        return null;
+    }
+    
+    private static String checkPipe(String nextMove, List<HashSet<Point>> reserved, Point actPos) {
+        
+        return "OK";
     }
 }

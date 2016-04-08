@@ -1,20 +1,18 @@
-// F:levels | X:exitPos | E:lifts | d:data | L:cloneLev | P:clonePos | m:move | T:targetPos | g:direction
+//F:levels|X:exitPos|E:lifts|d:data|L:cloneLev|P:clonePos|m:move|T:targetPos|g:direction|n:s.nextInt()/s.next()
 import java.util.*;
 class Player{
+	static Scanner s=new Scanner(System.in);
 	public static void main(String[] A){
-		Scanner s=new Scanner(System.in);
-		int F=s.nextInt(),X,E,L,P,T,i;s.next();s.next();s.next();X=s.nextInt();s.next();s.next();
-		Integer[][] d=new Integer[E=s.nextInt()][2];
-		for(i=0;i<E;i++){
-			d[i][0]=s.nextInt();d[i][1]=s.nextInt();
-		}
+		int F=n(),X,E,L,P,T,i;n();n();n();X=n();n();n();
+		Integer[][] d=new Integer[E=n()][2];
+		for(i=0;i<E;d[i][0]=n(),d[i++][1]=n());
 		Arrays.sort(d,new Comparator<Integer[]>(){
 			public int compare(Integer[] a,Integer[] b){
 				return a[0].compareTo(b[0]);
 			}
 		});
 		for(;;){
-			L=s.nextInt();P=s.nextInt();
+			L=n();P=n();
 			String g=s.next(),m="WAIT";
 			if(L>-1){
 				T=L<F-1?d[L][1]:X;
@@ -23,4 +21,5 @@ class Player{
 			System.out.println(m);
 		}
 	}
+	static int n(){return s.nextInt();}
 }

@@ -1,4 +1,4 @@
-// Mars Lander - Fuel Optimization (1934)
+// Mars Lander - Fuel Optimization (1980)
 import java.util.*;
 import java.awt.Point;
 
@@ -80,6 +80,8 @@ class Player {
         int pow = 0;
         int HScomp = 0;
         int VScomp = 0;
+        //int siteX = Math.min(Math.abs(X - leftX), Math.abs(X - rightX));    // Closest X point of landig site
+        //int realHS = X > rightX ? -HS : HS; 
         if (shouldKeepAltitude(X, Y) && VS < -1) {
             pow = 4;
         } else {
@@ -88,7 +90,7 @@ class Player {
             } else {
                 HScomp = 0;
             }
-            VScomp = -(int)Math.round(VS / 6.0);
+            VScomp = -(int)Math.round(VS / 6.6);
             pow = Math.min(HScomp + VScomp, 4);
         }
         if (getDistance(X) == 0 && R == 0 && (Y - siteY) < 123) {    // Switch off engines near landing to save fuel

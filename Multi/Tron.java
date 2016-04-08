@@ -1,3 +1,4 @@
+// Rank 277
 import java.awt.Point;
 import java.util.Scanner;
 import java.util.Vector;
@@ -9,6 +10,7 @@ class Player {
     // Global variables defined for convenient access
     static List<HashSet<Point>> reserved = new ArrayList<HashSet<Point>>(); // Set to store all reserved grid positions    
     static int N = 0;                                                       // total number of players (2 to 4).    
+    static Point actP = new Point(-1, -1);                                         // Actual point/position of my bike [X1,Y1]
 
     // Store next move with number of valid steps possible from that move
     static class Step {
@@ -27,7 +29,7 @@ class Player {
         String move = "LEFT";                                               // Starting direction
         String[] moves = new String[3];                                     // Order of next moves according to strategy
         boolean firstRound = true;
-        Point actP = new Point(-1, -1);                                     // Actual point/position of my bike [X1,Y1]
+
         // game loop
         while (true) {
             N = in.nextInt();                                               // total number of players (2 to 4).
@@ -64,14 +66,14 @@ class Player {
                     }
                 }
             }
-            if (firstRound) { firstRound = false; }                         // Store (X0, Y0) coords only first time
+            if (firstRound) { firstRound = false; }                         // Store [X0,Y0] coords only first time
             // Determine possible next positions to step excluding bounds
             moves = getCurlyMoves(move);                                    // Set strategy
-            Vector<String> validMoves = getValidMoves(moves, actP);         // Store valid moves
+            Vector<String> validMoves = getValidMoves(moves);               // Store valid moves
             if (validMoves.isEmpty()) {
                 System.err.println("OH, fuck! We lost. Waiting for timeout...");
             } else {                                                        // We have at least 1 valid move
-				Vector<String> safeMoves = getSafeMoves(validMoves, actP);
+				Vector<String> safeMoves = getSafeMoves(validMoves);
 				move = safeMoves.firstElement();
 				System.out.println(move);
 			}
@@ -114,9 +116,9 @@ class Player {
     }
 
     // Returns position of next move as a point
-    private static Point getP(String move, Point actP) {
-        int X = (int)(actP.getX());
-        int Y = (int)(actP.getY());
+    private static Point getP(String move, Point p) {
+        int X = (int)(p.getX());
+        int Y = (int)(p.getY());
         switch(move) {
             case "LEFT" : return new Point(X - 1, Y);
             case "RIGHT": return new Point(X + 1, Y);
@@ -127,7 +129,7 @@ class Player {
     }
 
     // Returns valid moves (if there are any) from moves, otherwise returns an empty vector
-    private static Vector<String> getValidMoves (String[] moves, Point actP) {
+    private static Vector<String> getValidMoves (String[] moves) {
         Vector<String> validMoves = new Vector<>();
         for (String move : moves) {
             if (onGrid(getP(move, actP)) && !isReserved(getP(move, actP))) {
@@ -138,7 +140,7 @@ class Player {
     }
 
     // Returns moves ordered by safetiness (first is the most safe)
-    private static Vector<String> getSafeMoves(Vector<String> moves, Point actP) {
+    private static Vector<String> getSafeMoves(Vector<String> moves) {
         Vector<Player.Step> steps = new Vector<>();     // Store next moves with valid steps possible from those moves
         Vector<String> safeMoves = new Vector<>();
         for (String move : moves) {

@@ -2,12 +2,12 @@
 import java.util.*;
 class Player{
 	static Scanner s=new Scanner(System.in);
-	public static void main(String[] A){
-		int F=n(),X,E,L,P,T,i;n();n();n();X=n();n();n();
-		Integer[][] d=new Integer[E=n()][2];
-		for(i=0;i<E;d[i][0]=n(),d[i++][1]=n());
+	public static void main(String[]a){
+		int F=n(),X,E,L,P,T,i=0;n();n();n();X=n();n();n();
+		Integer[][]d=new Integer[E=n()][2];
+		for(;i<E;d[i][0]=n(),d[i++][1]=n());
 		Arrays.sort(d,new Comparator<Integer[]>(){
-			public int compare(Integer[] a,Integer[] b){
+			public int compare(Integer[]a,Integer[]b){
 				return a[0].compareTo(b[0]);
 			}
 		});

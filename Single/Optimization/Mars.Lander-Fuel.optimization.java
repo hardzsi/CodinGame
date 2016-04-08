@@ -1,4 +1,4 @@
-// Mars Lander - Fuel Optimization (1933)
+// Mars Lander - Fuel Optimization (1934)
 import java.util.*;
 import java.awt.Point;
 
@@ -58,7 +58,7 @@ class Player {
             angleXcomp = (int)Math.round(getDistance(X) * (3 / 185.0)); 
             angleXcomp += (int)(angleXcomp / 0.7);
             if (Math.abs(HS) > 6 && Y > siteY + 100) {  // Compensating for h.speed only if landing site isn't nearby 
-                angleHScomp = (int)Math.round(HS * (9 / 25.0));
+                angleHScomp = (int)Math.round(HS * (9 / 24.7));
                 angleHScomp += (int)(angleHScomp / 0.7);
             } else {
                 angleHScomp = 0;

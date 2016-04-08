@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.ArrayList;
 
 class Player {
+    // Global variables defined for convenient access
+    static List<HashSet<Point>> reserved = new ArrayList<HashSet<Point>>(); // Set to store all reserved grid positions    
+    static int N = 0;                                                       // total number of players (2 to 4).    
+
     // Store next move with number of valid steps possible from that move
     static class Step {
         Step(String aMove, int aCount) { move = aMove; count = aCount; } 
@@ -23,11 +27,10 @@ class Player {
         String move = "LEFT";                                               // Starting direction
         String[] moves = new String[3];                                     // Order of next moves according to strategy
         boolean firstRound = true;
-        List<HashSet<Point>> reserved = new ArrayList<HashSet<Point>>();    // Set to store all reserved grid positions
-        Point actP = new Point(-1, -1);                                     // Actual point/position of my bike (X1, Y1)
+        Point actP = new Point(-1, -1);                                     // Actual point/position of my bike [X1,Y1]
         // game loop
         while (true) {
-            int N = in.nextInt();                                           // total number of players (2 to 4).
+            N = in.nextInt();                                               // total number of players (2 to 4).
             int P = in.nextInt();                                           // your player number (0 to 3).
             if (firstRound) {                                               // Initializing array of sets
                 for (int i = 0; i < N; ++i) {
@@ -48,7 +51,7 @@ class Player {
                 if (i == P) {
                     reserved.get(i).add(p1);
                     System.err.println("Me    " + i + ":" + coords(p1) + " added");
-                    actP.move(X1, Y1);
+                    actP.move(X1, Y1);                                      // Move my bike to [X1,Y1] position
                 } else {
                     if (p1.getX() != -1) {
                         reserved.get(i).add(p1);
@@ -64,23 +67,23 @@ class Player {
             if (firstRound) { firstRound = false; }                         // Store (X0, Y0) coords only first time
             // Determine possible next positions to step excluding bounds
             moves = getCurlyMoves(move);                                    // Set strategy
-            //Vector<String> safeMoves = new Vector<>();                    // Store moves considered safe (not a trap)
-            Vector<String> validMoves = getValidMoves(moves, actP, reserved, N);    // Store valid moves
+            Vector<String> validMoves = getValidMoves(moves, actP);         // Store valid moves
             if (validMoves.isEmpty()) {
                 System.err.println("OH, fuck! We lost. Waiting for timeout...");
             } else {                                                        // We have at least 1 valid move
-				Vector<String> safeMoves = getSafeMoves(validMoves, actP, reserved, N);
+				Vector<String> safeMoves = getSafeMoves(validMoves, actP);
 				move = safeMoves.firstElement();
 				System.out.println(move);
 			}
         } // while()
     } // main()
 
-    // Return coordinates of p as string - used for debugging
+    // Return coordinates of p as string - used for displaying debug info
     private static String coords(Point p) {
         return "[x=" + (int)p.getX() + ",y=" + (int)p.getY() + "]";
     }
-    // Our strategy: csiga
+
+    // Returns clockwise curly moving order from current move (our strategy)
     private static String[] getCurlyMoves(String move) {
         String[] moves = null;
         switch (move) {
@@ -91,8 +94,9 @@ class Player {
         }
         return moves;
     }
-    // Returns true if p reserved
-    private static boolean isReserved(Point p, List<HashSet<Point>> reserved, int N) {
+
+    // Returns true if p is reserved
+    private static boolean isReserved(Point p) {
         boolean allocated = false;
         for (int i = 0; i < N && !allocated; ++i) {
             if (reserved.get(i) != null) {
@@ -101,19 +105,14 @@ class Player {
         }
         return allocated;
     }
-    // Returns true if next move is within bounds, false otherwise
-    private static boolean hitsWall(String move, Point actP) {
-        int X = (int)(actP.getX());
-        int Y = (int)(actP.getY());
-        boolean ret = false;
-        switch(move) {
-            case "LEFT" : if (X == 0)   ret=true; break;
-            case "RIGHT": if (X == 29)  ret=true; break;
-            case "UP"   : if (Y == 0)   ret=true; break;
-            case "DOWN" : if (Y == 19)  ret=true; break;
-        }
-        return ret;
+    
+    // Returns true if p is within game grid
+    private static boolean onGrid(Point p) {
+        int X = (int)(p.getX());
+        int Y = (int)(p.getY());
+        return (X >= 0 && X < 30 && Y >= 0 && Y < 20) ? true : false;
     }
+
     // Returns position of next move as a point
     private static Point getP(String move, Point actP) {
         int X = (int)(actP.getX());
@@ -126,11 +125,12 @@ class Player {
         }
         return null;
     }
+
     // Returns valid moves (if there are any) from moves, otherwise returns an empty vector
-    private static Vector<String> getValidMoves (String[] moves, Point actP, List<HashSet<Point>> reserved, int N) {
+    private static Vector<String> getValidMoves (String[] moves, Point actP) {
         Vector<String> validMoves = new Vector<>();
         for (String move : moves) {
-            if (!hitsWall(move, actP) && !isReserved(getP(move, actP), reserved, N)) {
+            if (onGrid(getP(move, actP)) && !isReserved(getP(move, actP))) {
                 validMoves.add(move);
             }
         }
@@ -138,20 +138,18 @@ class Player {
     }
 
     // Returns moves ordered by safetiness (first is the most safe)
-    private static Vector<String> getSafeMoves(Vector<String> moves, Point actP, List<HashSet<Point>> reserved, int N) {
+    private static Vector<String> getSafeMoves(Vector<String> moves, Point actP) {
         Vector<Player.Step> steps = new Vector<>();     // Store next moves with valid steps possible from those moves
         Vector<String> safeMoves = new Vector<>();
-		//Vector<Integer> count = new Vector<>();
         for (String move : moves) {
             String[] nextMoves = getCurlyMoves(move);
 			int validCount = 0;
 			Point p = getP(move, actP);
 			for (String m : nextMoves) {
-				if (!hitsWall(m, p) && !isReserved(getP(m, p), reserved, N)) {
+				if (onGrid(getP(m, p)) && !isReserved(getP(m, p))) {    
 					validCount++;
 				}
 			}
-			//count.add(validCount);
 			steps.add(new Step(move, validCount));
         }      
 		for(Step step : steps) {                        // Put moves with 3 or 2 valid directions to safeMoves

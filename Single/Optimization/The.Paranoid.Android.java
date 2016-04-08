@@ -1,29 +1,29 @@
+// F:levels | X:exitPos | E:lifts | b:blocked | d:data | L:cloneLev | P:clonePos | m:move | T:targetPos | g:direction
 import java.util.*;
 class Player{
-	public static void main(String[] t){
+	public static void main(String[] A){
 		Scanner s=new Scanner(System.in);
-		int levels=s.nextInt();s.nextInt();s.next();s.next();int exitPos=s.nextInt();s.next();s.next();int lifts=s.nextInt();
-		boolean[] blocked=new boolean[levels];
-		Integer[][] data=new Integer[lifts][2];
-		for(int i=0;i<lifts;i++){
-			data[i][0]=s.nextInt();data[i][1]=s.nextInt();
+		int F=s.nextInt();s.next();s.next();s.next();int X=s.nextInt();s.next();s.next();int E=s.nextInt();
+		boolean[] b=new boolean[F];
+		Integer[][] d=new Integer[E][2];
+		for(int i=0;i<E;i++){
+			d[i][0]=s.nextInt();d[i][1]=s.nextInt();
 		}
-		Arrays.sort(data,new Comparator<Integer[]>(){
+		Arrays.sort(d,new Comparator<Integer[]>(){
 			public int compare(Integer[] a,Integer[] b){
 				return a[0].compareTo(b[0]);
 			}
 		});
-		while(true){
-			int cloneLev=s.nextInt(),clonePos=s.nextInt();
-			String dir=s.next(),move="WAIT";
-			if(cloneLev!=-1){
-				int targetPos=(cloneLev<levels-1)?data[cloneLev][1]:exitPos;
-				if((targetPos<clonePos&dir.equals("RIGHT")&!blocked[cloneLev])|
-					(targetPos>clonePos&dir.equals("LEFT")&!blocked[cloneLev])){
-					move="BLOCK";blocked[cloneLev]=true;
+		while(F>0){
+			int L=s.nextInt(),P=s.nextInt();
+			String g=s.next(),m="WAIT";
+			if(L!=-1){
+				int T=L<F-1?d[L][1]:X;
+				if((T<P&g.equals("RIGHT")&!b[L])|(T>P&g.equals("LEFT")&!b[L])){
+					m="BLOCK";b[L]=true;
 				}
 			}
-			System.out.println(move);
+			System.out.println(m);
 		}
 	}
 }

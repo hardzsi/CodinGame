@@ -60,7 +60,7 @@ class Player {
             if (firstRound) { firstRound = false; }                         // Not to store X0, Y0 any more
             // Determine possible next positions to step excluding bounds           
             moves = curly_moves(move);                                      // Determine strategy
-            String nextMove = null;          
+            String nextMove = null;         
             Vector<String> optMove = new Vector<>();                        // Store move options
             Vector<String> safeMove = new Vector<>();                       // Store moves considered safe (not go to pipe)
             for (int i = 0; i < moves.length; ++i) {
@@ -74,7 +74,7 @@ class Player {
             } else {
                 for (String m : optMove) {
                     System.err.println("opt.move: " + m);
-                    if (checkPipe(m, reserved, actPos) == "OK") {
+                    if (checkPipe(m, reserved, actPos, N) == "OK") {
                         safeMove.add(m);
                         System.err.println("move " + m + " considered safe");
                     }
@@ -92,7 +92,7 @@ class Player {
     private static String coords(Point p) {
         return "[x=" + (int)p.getX() + ",y=" + (int)p.getY() + "]";  
     }
-    
+    // Our strategy
     private static String[] curly_moves(String move) {                  // Csiga
         String[] moves = null;
         switch (move) {
@@ -103,66 +103,46 @@ class Player {
         }
         return moves;
     }
-    
+    // Return true if p reserved
+    private static boolean isReserved(Point p, List<HashSet<Point>> reserved, int N) {
+        boolean allocated = false;
+        for (int i = 0; i < N && !allocated; ++i) {
+            if (reserved.get(i) != null) {
+                if (reserved.get(i).contains(p)) {
+                    allocated = true;
+                }    
+            }
+        }
+        return allocated;
+    }
+    // Validate nextMove. If nextMove valid, returns it, otherwise returns null 
     private static String checkMove(String nextMove, List<HashSet<Point>> reserved, Point actPos, int N) {
         int X = (int)(actPos.getX());
         int Y = (int)(actPos.getY());
-        boolean allocated = false;
-        if (nextMove == "LEFT") {
-            allocated = false;           
-            if (X == 0) {
-                allocated = true;
-            } else {               
-                for (int i = 0; i < N && !allocated; ++i) {
-                    if (reserved.get(i) != null) {
-                        if (reserved.get(i).contains(new Point(X - 1, Y))) { allocated = true; }    
-                    }
-                }
+        if (nextMove == "LEFT") {    
+            if (X != 0 && !isReserved(new Point(X - 1, Y), reserved, N)) {
+                return "LEFT";
             }
-            if (!allocated) { return "LEFT"; }
         }
         if (nextMove == "RIGHT") {
-            if (X == 29) {
-                allocated = true;
-            } else {               
-                for (int i = 0; i < N && !allocated; ++i) {
-                    if (reserved.get(i) != null) {
-                        if (reserved.get(i).contains(new Point(X + 1, Y))) { allocated = true; }    
-                    }
-                }
+            if (X != 29 && !isReserved(new Point(X + 1, Y), reserved, N)) {
+                return "RIGHT";
             }
-            if (!allocated) { return "RIGHT"; }
         }
-        if (nextMove == "UP") {
-            allocated = false;           
-            if (Y == 0) {
-                allocated = true;
-            } else {               
-                for (int i = 0; i < N && !allocated; ++i) {
-                    if (reserved.get(i) != null) {
-                        if (reserved.get(i).contains(new Point(X, Y - 1))) { allocated = true; }    
-                    }
-                }
+        if (nextMove == "UP") {     
+            if (Y != 0 && !isReserved(new Point(X, Y - 1), reserved, N)) {
+                return "UP";
             }
-            if (!allocated) { return "UP"; }
         }
-        if (nextMove == "DOWN") {
-            allocated = false;           
-            if (Y == 19) {
-                allocated = true;
-            } else {               
-                for (int i = 0; i < N && !allocated; ++i) {
-                    if (reserved.get(i) != null) {
-                        if (reserved.get(i).contains(new Point(X, Y + 1))) { allocated = true; }    
-                    }
-                }
+        if (nextMove == "DOWN") {     
+            if (Y != 19 && !isReserved(new Point(X, Y + 1), reserved, N)) {
+                return "DOWN";
             }
-            if (!allocated) { return "DOWN"; }
         }
         return null;
     }
-    
-    private static String checkPipe(String nextMove, List<HashSet<Point>> reserved, Point actPos) {
+
+    private static String checkPipe(String nextMove, List<HashSet<Point>> reserved, Point actPos, int N) {
         
         return "OK";
     }

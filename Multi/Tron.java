@@ -1,4 +1,4 @@
-// Rank 277
+// Tron Curly #6 - Rank:361(05.14)|246(05.15)|247(05.16)
 import java.awt.Point;
 import java.util.Scanner;
 import java.util.Vector;
@@ -77,13 +77,13 @@ class Player {
 				move = safeMoves.firstElement();
 				System.out.println(move);
 			}
-        } // while()
+        }
     } // main()
 
     // Return coordinates of p as string - used for displaying debug info
     private static String coords(Point p) {
         return "[x=" + (int)p.getX() + ",y=" + (int)p.getY() + "]";
-    }
+    } // coords()
 
     // Returns clockwise curly moving order from current move (our strategy)
     private static String[] getCurlyMoves(String move) {
@@ -95,7 +95,7 @@ class Player {
             case "DOWN" : moves = new String[] {"LEFT", "DOWN", "RIGHT"}; break;
         }
         return moves;
-    }
+    } // getCurlyMoves()
 
     // Returns true if p is reserved
     private static boolean isReserved(Point p) {
@@ -106,14 +106,14 @@ class Player {
             }
         }
         return allocated;
-    }
+    } // isReserved()
     
     // Returns true if p is within game grid
     private static boolean onGrid(Point p) {
         int X = (int)(p.getX());
         int Y = (int)(p.getY());
         return (X >= 0 && X < 30 && Y >= 0 && Y < 20) ? true : false;
-    }
+    } // onGrid()
 
     // Returns position of next move as a point
     private static Point getP(String move, Point p) {
@@ -126,7 +126,7 @@ class Player {
             case "DOWN" : return new Point(X, Y + 1);
         }
         return null;
-    }
+    } // getP()
 
     // Returns valid moves (if there are any) from moves, otherwise returns an empty vector
     private static Vector<String> getValidMoves (String[] moves) {
@@ -137,7 +137,7 @@ class Player {
             }
         }
         return validMoves;
-    }
+    } // getValidMoves()
 
     // Returns moves ordered by safetiness (first is the most safe)
     private static Vector<String> getSafeMoves(Vector<String> moves) {
@@ -173,13 +173,20 @@ class Player {
 		for (Step step : steps) {
 		    System.err.println(step);
 		}
-		if (steps.size() == 2) {
+		if (steps.size() == 2) {                        // Should be a corner or end of a tunnel (UTurn)
 		    int count1 = steps.get(0).getCount();
 		    int count2 = steps.get(1).getCount();
-		    if ((count1 == 1 && count2 == 3) || (count2 == 1 && count1 == 3)) {
+		    if ((count1 == 1 && count2 == 3) || (count1 == 3 && count2 == 1)) {
     		    System.err.println("Corner detected - entering corner...");
-    		    safeMoves.clear();
-    		    safeMoves.add(count1 == 1 ? steps.get(0).getMove() : steps.get(1).getMove());		        
+    		    safeMoves.clear();                      // Put the forward direction only into SafeMoves
+    		    safeMoves.add(count1 == 1 ? steps.get(0).getMove() : steps.get(1).getMove());
+		    } else if ((count1 == 1 && count2 == 2) || (count1 == 2 && count2 == 1)) {
+   		        System.err.println("Possible tunnel detected - checking UTurns...");
+   		        boolean uTurn = (count1 == 1 ? isUTurn(steps.get(0).getMove()) : isUTurn(steps.get(1).getMove()));
+                if (uTurn) {
+    		        safeMoves.clear();                  // Put the forward direction only into SafeMoves
+    		        safeMoves.add(count1 == 1 ? steps.get(0).getMove() : steps.get(1).getMove());                
+                }
 		    }
 		}
 		System.err.println("Safe moves:");
@@ -187,5 +194,59 @@ class Player {
 		    System.err.println(safeMoves.get(i));
 		}
         return safeMoves;
-    }
-}
+    } // getSafeMoves()
+    
+    // Returns true if all rules defined in 'rules' array match 
+    private static boolean isRulesMatch(int[][] rules) {
+        boolean match = true;
+        for (int[] rule : rules) {
+            Point p = new Point(rule[0], rule[1]);
+            if (rule[2] == 0) {                         // Check if free
+                if (!onGrid(p) || isReserved(p)) { match = false; }
+            } else {                                    // Check if reserved
+                if (onGrid(p) && !isReserved(p)) { match = false; }
+            }
+        }
+        return match;
+    } // isRulesMatch()
+    
+    private static boolean isUTurn(String move) {
+        int x = (int)(actP.getX());
+        int y = (int)(actP.getY());
+        boolean turn = false;
+        // Rules to detect UTurn in moving direction. UTurn reached if all 9 rules match
+        // Values:coordX, coordY, state as free(0) or occupied(1)
+        int[][] leftRulesA  = new int[][] { {x,y+1,0}, {x-1,y+1,0}, {x-1,y,0}, {x,y-1,1}, {x-1,y-1,1},
+                                            {x-2,y,1}, {x-2,y+1,1}, {x-1,y+2,1}, {x,y+2,1} };
+        int[][] leftRulesB  = new int[][] { {x,y-1,0}, {x-1,y-1,0}, {x-1,y,0}, {x,y-2,1}, {x-1,y-2,1},
+                                            {x-2,y-1,1}, {x-2,y,1}, {x-1,y+1,1}, {x,y+1,1} };
+        int[][] rightRulesA = new int[][] { {x,y-1,0}, {x+1,y-1,0}, {x+1,y,0}, {x,y-2,1}, {x+1,y-2,1},
+                                            {x+2,y-1,1}, {x+2,y,1}, {x+1,y+1,1}, {x,y+1,1} };
+        int[][] rightRulesB = new int[][] { {x,y+1,0}, {x+1,y+1,0}, {x+1,y,0}, {x,y-1,1}, {x+1,y-1,1},
+                                            {x+2,y,1}, {x+2,y+1,1}, {x+1,y+2,1}, {x,y+2,1} };                                            
+        int[][] upRulesA    = new int[][] { {x,y-1,0}, {x+1,y,0}, {x+1,y-1,0}, {x-1,y,1}, {x-1,y-1,1},
+                                            {x,y-2,1}, {x+1,y-2,1}, {x+2,y-1,1}, {x+2,y,1} };
+        int[][] upRulesB    = new int[][] { {x-1,y,0}, {x-1,y-1,0}, {x,y-1,0}, {x-2,y,1}, {x-2,y-1,1},
+                                            {x-1,y-2,1}, {x,y-2,1}, {x+1,y-1,1}, {x+1,y,1} };
+        int[][] downRulesA  = new int[][] { {x,y+1,0}, {x+1,y,0}, {x+1,y+1,0}, {x-1,y,1}, {x-1,y+1,1},
+                                            {x,y+2,1}, {x+1,y+2,1}, {x+2,y+1,1}, {x+2,y,1} };
+        int[][] downRulesB  = new int[][] { {x-1,y,0}, {x-1,y+1,0}, {x,y+1,0}, {x-2,y,1}, {x-2,y+1,1},
+                                            {x-1,y+2,1}, {x,y+2,1}, {x+1,y+1,1}, {x+1,y,1} };
+        switch(move) {
+            case "LEFT":
+                if (isRulesMatch(leftRulesA) || isRulesMatch(leftRulesB)) { turn = true; }
+                break;
+            case "RIGHT":
+                if (isRulesMatch(rightRulesA) || isRulesMatch(rightRulesB)) { turn = true; }
+                break;
+            case "UP":
+                if (isRulesMatch(upRulesA) || isRulesMatch(upRulesB)) { turn = true; }
+                break;
+            case "DOWN":
+                if (isRulesMatch(downRulesA) || isRulesMatch(downRulesB)) { turn = true; }
+                break;
+        }
+        if (turn) { System.err.println("UTurn identified while moving " + move + "!"); }
+        return turn;
+    } // isUTurn()
+} // class Player

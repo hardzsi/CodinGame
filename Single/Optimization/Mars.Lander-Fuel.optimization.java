@@ -1,5 +1,4 @@
-// Mars Lander - Fuel Optimization
-// Save the Planet. Use less Fossil Fuel.
+// Mars Lander - Fuel Optimization (1822)
 import java.util.*;
 import java.awt.Point;
 
@@ -81,7 +80,7 @@ class Player {
         int pow = 0;
         int HScomp = 0;
         int VScomp = 0;
-        if (shouldKeepAltitude(X, Y) && VS < 0) {
+        if (shouldKeepAltitude(X, Y) && VS < -1) {
             pow = 4;
         } else {
             if ((R < 0 && HS < 0) || (R > 0 && HS > 0)) {
@@ -90,16 +89,20 @@ class Player {
                 HScomp = 0;
             }
             VScomp = -(int)Math.round(VS / 6.0);
-            pow = HScomp + VScomp;
-            pow = (pow > 4) ? 4 : pow;      
+            pow = Math.min(HScomp + VScomp, 4);
         }
+        if (getDistance(X) == 0 && R == 0 && (Y - siteY) < 123) {    // Switch off engines near landing to save fuel
+            debug("Power OFF!");
+            pow = 0;
+        }
+        
         debug("HScomp:" + HScomp + ", VScomp:" + VScomp + ", pow:" + pow);
         return pow;
     } // getPower()
 
     // Returns true, if altitude keeping (not losing much height) has a priority over landing
     private static boolean shouldKeepAltitude(int X, int Y) {
-        return ((Y - siteY) < 600 && getDistance(X) !=0) ? true : false;
+        return ((Y - siteY) < 600 && getDistance(X) > 1200) ? true : false;
     } // shouldKeepAltitude()
 
     // Returns distance in meters of lander (X) to closest point of landing site. Negative if lander is left from site
@@ -128,12 +131,7 @@ class Player {
         return ret;
     } // getSite()
 
-    private static String msg(int R, int P) {
-        return R + " " + P;
-    } // msg()
+    private static String msg(int R, int P) { return R + " " + P; }
 
-    private static void debug(String s) {
-        System.err.println(s);
-        return;
-    } // debug()
+    private static void debug(String s) { System.err.println(s); }
 } // class Player

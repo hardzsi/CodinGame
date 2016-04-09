@@ -2,93 +2,76 @@
 import java.util.*;
 
 class Solution {
-    static final boolean DEBUG = true;
+    static final boolean DEBUG = false;
     
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
-        int n = in.nextInt();                       // Number of adjacency relations
-        debug(n + " adjacency relations:");
-        //Integer[][] adjacents = new Integer[n][2];  // Relations to be sorted
-        //HashSet<Integer> IDs = new HashSet<>();     // Set of IDs (enable quick check if an ID exists or not)
-        ArrayList<Node<Integer>> nodes =
-            new ArrayList<>();                      // List of created nodes
+        int n = in.nextInt();                               // Number of adjacency relations
+        disp(n + " adjacency relations:");
+        ArrayList<Node<Integer>> nodes = new ArrayList<>(); // List of created nodes
         // Store adjacenty relations in nodes
         for (int i = 0; i < n; i++) {
-            int xi = in.nextInt();                  // ID of a person which is adjacent to yi
-            int yi = in.nextInt();                  // ID of a person which is adjacent to xi
-            //adjacents[i][0] = xi; adjacents[i][1] = yi;
-            //IDs.add(xi); IDs.add(yi);               // Adds element to set only if it is not already present
-            debug(xi + " - " + yi);
-            
-            Node<Integer> upper = getNode(xi, nodes);
+            int xi = in.nextInt();                          // ID of a person which is adjacent to yi
+            int yi = in.nextInt();                          // ID of a person which is adjacent to xi
+            disp(xi + " - " + yi);
+            Node<Integer> upper = getNode(xi, nodes);       // Upper node always found among nodes except first time
             if (upper == null) {
                 upper = new Node<>(null, xi);
                 nodes.add(upper);
             }
-            Node<Integer> lower = new Node<>(upper, yi);
+            Node<Integer> lower = new Node<>(upper, yi);    // Lower node always a new one
             nodes.add(lower);
             upper.addChild(lower.getId());
             //debug( xi + " - " + yi + " :: " + upper + " | " + lower);
         }
         // Display nodes
         for (Node<Integer> node : nodes) {
-            debug("" + node);
+            disp("" + node);
         }
-
-        /*{
-        // Sort adjacents array as per first values or second values if first values are the same
-        Arrays.sort(adjacents, new Comparator<Integer[]>() {
-            @Override
-            public int compare(Integer[] a, Integer[] b) {
-                return a[0] == b[0] ? (a[1] == b[1] ? 0 : (a[1] < b[1] ? -1 : 1)) : (a[0] < b[0] ? -1 : 1);
-            }
-        });
-        debug("\nAdj. relations sorted:");
-        for (Integer[] adj : adjacents) {
-            debug(adj[0] + " " + adj[1]);
-        }
-        }*/
-        /*debug("\nNode ids stored in set:");
-        for (Integer id : IDs) {
-            debug("" + id);
-        }*/
+        disp("");
         
-        int startNode = 0;
-        markNeighbors(startNode, nodes);
+        int startNode = 5;
+        disp("start node:" + startNode);
+        markNeighbors(getNode(startNode, nodes), nodes);
         int round = 1;
         ArrayList<Node<Integer>> markedNodes;
-        while (!isAllNodesMarked(nodes)) {
+        do {
+            debug("call getMarkedNodes:");
             markedNodes = getMarkedNodes(nodes);
-            for (Node<Integer> markedNode : markedNodes) {
-                debug("marked node:" + markedNode);
-                markNeighbors(markedNode.getId(), nodes);
+            for (Node<Integer> marked : markedNodes) {
+                debug("marked node:" + marked);
+                markNeighbors(marked, nodes);
             }
             markedNodes.clear();
             round++;
-            debug("rounds:" + round);
-        }
-        debug("rounds:" + round);
+            debug("round:" + round);
+        } while (!isAllNodesMarked(nodes));
+        disp("round:" + round);
         
-        System.err.println();
-        System.out.println("2");                    // Minimal amount of steps required to completely propagate the ad
-    }// main()
+        disp("");
+        System.out.println("2");                            //  Minimal amount of steps required
+    }// main()                                                  to completely propagate the ad
 
-    // Mark all neighbors (parent and children) of node with id
-    static <T> void markNeighbors(T id, ArrayList<Node<T>> nodes) {
-        Node<T> node = getNode(id, nodes);
-        node.mark();                                // Mark node
+    // Mark node and all its neighbors (parent and children)
+    // Warning: existence of node is NOT checked!
+    static <T> void markNeighbors(Node<T> node, ArrayList<Node<T>> nodes) {
+        debug("markNeighbors called for " + node);
+        node.mark();                                        // Mark the node
         debug("node " + node.getId() + " marked");
-        if (node.hasChildren()) {                   // Mark node's children
+        if (node.hasChildren()) {                           // Mark node's children
             debug("node has children");
             ArrayList<Node<T>> children = node.getChildren();
-            for (Node<T> child : children) {
+            for (Node<T> c : children) {
+                Node<T> child = getNode(c.getId(), nodes);
                 child.mark();
                 debug("child node " + child.getId() + " marked:" + child.isMarked());
             }
         }
-        if (node.getParent() != null) {             // Mark node's parent
+        if (node.getParent() != null) {                     // Mark node's parent
             node.getParent().mark();
-            debug("node's parent is " + node.getParent() + "; it was marked");
+            debug("node's parent is " + node.getParent() + " marked:" + node.getParent().isMarked());
+        } else {
+            debug("node has no parent");
         }
     }// markNeighbors()
 
@@ -122,7 +105,7 @@ class Solution {
 
     // Return list of marked nodes - an empty list if no nodes marked
     static <T> ArrayList<Node<T>> getMarkedNodes(ArrayList<Node<T>> nodes) {
-        for (Node<T> node : nodes) { debug("" + node + "; node is marked? " + node.isMarked()); }
+        for (Node<T> node : nodes) { debug("" + node + " marked:" + node.isMarked()); }
         ArrayList<Node<T>> markedNodes = new ArrayList<>();
         for (Node<T> node : nodes) {
             if (node.isMarked()) {
@@ -139,22 +122,25 @@ class Solution {
             System.err.println(s);
         }
     }// debug()
+    // Display string to err
+    static void disp(String s) {
+        System.err.println(s);
+    }// disp()
 }// class Solution
 
 // Generic node class with id and flag to be marked
 class Node<T> {
-    public Node(Node<T> parent, T id) {
+    public Node(Node<T> parent, T id) {                     // Constructor
         this.parent = parent;
         this.id = id;
     }// Constructor
-    // Getters
-    public T         getId() { return id; }
-    public Node<T>   getParent() { return parent; }
+    public T        getId() { return id; }        // Getters
+    public Node<T>  getParent() { return parent; }
     public ArrayList<Node<T>> getChildren() { return children; }
     // Return true if node has at least one child
-    public boolean   hasChildren() { return children != null; }
+    public boolean  hasChildren() { return children != null; }
     // Return child node if found among children, otherwise null
-    public Node<T>   getChild(T id) {           
+    public Node<T>  getChild(T id) {           
         Node<T> ret = null;
         if (children != null && hasChild(id)) {
             for (Node<T> child : children) {
@@ -166,7 +152,7 @@ class Node<T> {
         return ret;
     }// getChild()
     // Return true if child with id is among children    
-    public boolean   hasChild(T id) {
+    public boolean  hasChild(T id) {
         boolean ret = false;
         if (children != null) {
             for (Node<T> child : children) {
@@ -178,7 +164,7 @@ class Node<T> {
         return ret;
     }// hasChild()
     // Add child with id and return child node, if node wasn't among children, otherwise return null
-    public Node<T>   addChild(T id) {
+    public Node<T>  addChild(T id) {
         Node<T> child = null;
         if (children == null) {
             children = new ArrayList<>();
@@ -190,13 +176,13 @@ class Node<T> {
         return child;
     }// addChild()
     // Set and remove marked flag
-    public void      mark() { marked = true; }
-    public void      clearMark() { marked = false; }
+    public void     mark() { marked = true; }
+    public void     clearMark() { marked = false; }
     // Return true if marked flag is set
-    public boolean   isMarked() { return marked; }
+    public boolean  isMarked() { return marked; }
     // Return string as 'node id (parent:id, children:ids)' or 'node id (children:ids  parent:id)'
     @Override
-    public String    toString() {
+    public String   toString() {
         String p = "none";
         if (parent != null) {
             p = parent.getId().toString();
@@ -212,8 +198,8 @@ class Node<T> {
         return "node " + id + " (children:" + buf.toString() + "  parent:" + p + ")";
     }// toString()
 
-    private T id = null;                            // Node id
-    private boolean marked = false;                 // Marked flag
-    private Node<T> parent = null;                  // Parent node
-    private ArrayList<Node<T>> children = null;     // Children nodes
+    private T id = null;                                    // Node id
+    private boolean marked = false;                         // Marked flag
+    private Node<T> parent = null;                          // Parent node
+    private ArrayList<Node<T>> children = null;             // Children nodes
 }// class Node<>

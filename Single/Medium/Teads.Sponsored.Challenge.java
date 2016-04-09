@@ -8,14 +8,14 @@ class Solution {
         Scanner in = new Scanner(System.in);
         int n = in.nextInt();                               // Number of adjacency relations
         disp(n + " adjacency relations");
-        ArrayList<Node<Integer>> nodes = new ArrayList<>(); // List of created nodes
-        ArrayList<Integer> ids = new ArrayList<>();         // List of node ids
-        ArrayList<Integer> steps = new ArrayList<>();       // Steps to propagate the whole ad starting from node ids 
+        List<Node<Integer>> nodes = new ArrayList<>();      // List of created nodes
+        List<Integer> ids = new ArrayList<>();              // List of node ids
+        List<Integer> steps = new ArrayList<>();            // Steps needed to propagate the whole ad starting at ids
         // Store adjacenty relations in nodes, also node ids
         for (int i = 0; i < n; i++) {
             int xi = in.nextInt();                          // ID of a person which is adjacent to yi
             int yi = in.nextInt();                          // ID of a person which is adjacent to xi
-            disp(xi + " - " + yi);
+            //debug(xi + " - " + yi);
             if (!ids.contains(xi)) { ids.add(xi); }
             if (!ids.contains(yi)) { ids.add(yi); }
             Node<Integer> upper = getNode(xi, nodes);       // Get upper node form nodes array
@@ -37,57 +37,64 @@ class Solution {
         // Display ids
         debug("\nnode ids sorted:");
         for (Integer id : ids) {
-            debug("" + id);
+            debug(id.toString());
         }
         // Display nodes
         debug("\nnodes:");
         for (Node<Integer> node : nodes) {
-            disp("" + node);
+            debug(node.toString());
         }
-        debug("\nfill steps array:");
-        // Fill steps array
+
+        debug("\ndetermine steps:");
+        // Determine the steps needed spreading from id and store these in steps array
         for (Integer id : ids) {
-            markNeighbors(getNode(id, nodes), nodes);
-            steps.add(getSteps(id, nodes));
-            clearMarks(nodes);
+            Node<Integer> current = getNode(id, nodes);
+            if (current.hasChildren()) {                    // Speedup: don't determine steps for nodes without children
+                markNeighbors(current, nodes);
+                steps.add(getSteps(id, nodes));
+                // Reset mark flags of all nodes
+                for (Node<Integer> node : nodes) {
+                    node.clearMark();
+                }
+            }
         }
         Collections.sort(steps);
         // Display steps
-        debug("\nsteps:");
+        debug("\ndetermined steps:");
         for (Integer stp : steps) {
-            debug("" + stp);
+            debug(stp.toString());
         }
         disp("\noutput:");
-        System.out.println(steps.get(0));                       //  Minimal amount of steps required
-    }// main()                                                  to completely propagate the ad
+        System.out.println(steps.get(0));                   //  Minimal amount of steps required to propagate the ad
+    }// main()
 
     // Determine steps needed to propagate the whole ad from given start node
-    static <T> Integer getSteps(T id, ArrayList<Node<T>> nodes) {
+    static <T> Integer getSteps(T id, List<Node<T>> nodes) {
         ArrayList<Node<T>> markedNodes;
         int step = 1;          
         do {
-            debug("call getMarkedNodes:");
+            //debug("call getMarkedNodes:");
             markedNodes = getMarkedNodes(nodes);
             for (Node<T> marked : markedNodes) {
-                debug("marked node:" + marked);
+                //debug("marked node:" + marked);
                 markNeighbors(marked, nodes);
             }
             markedNodes.clear();
             step++;
-            debug("step:" + step);
+            //debug("step:" + step);
         } while (!isAllNodesMarked(nodes));
         return step;
     }// getSteps()
 
     // Mark node and all its neighbors (parent and children)
     // Warning: existence of node is NOT checked!
-    static <T> void markNeighbors(Node<T> node, ArrayList<Node<T>> nodes) {
+    static <T> void markNeighbors(Node<T> node, List<Node<T>> nodes) {
         debug("markNeighbors called for " + node);
         node.mark();                                        // Mark the node
         debug("node " + node.getId() + " marked");
         if (node.hasChildren()) {                           // Mark node's children
             debug("node has children");
-            ArrayList<Node<T>> children = node.getChildren();
+            List<Node<T>> children = node.getChildren();
             for (Node<T> c : children) {
                 Node<T> child = getNode(c.getId(), nodes);
                 child.mark();
@@ -102,15 +109,8 @@ class Solution {
         }
     }// markNeighbors()
 
-    // Reset mark flags of all nodes
-    static <T> void clearMarks(ArrayList<Node<T>> nodes) {
-        for (Node<T> node : nodes) {
-            node.clearMark();
-        }
-    } // clearMarks()
-
     // Return true if all nodes are marked
-    static <T> boolean isAllNodesMarked(ArrayList<Node<T>> nodes) {
+    static <T> boolean isAllNodesMarked(List<Node<T>> nodes) {
         boolean allMarked = true;
         for (Node<T> node : nodes) {
             if (!node.isMarked()) {
@@ -121,7 +121,7 @@ class Solution {
     }// isAllNodesMarked()
 
     // Rerurn node if found in nodes array, otherwise null
-    static <T> Node<T> getNode(T id, ArrayList<Node<T>> nodes) {
+    static <T> Node<T> getNode(T id, List<Node<T>> nodes) {
         for (Node<T> node : nodes) {
             if (node.getId().equals(id)) {
                 return node;
@@ -131,13 +131,13 @@ class Solution {
     }// getNode()
 
     // Return list of marked nodes - an empty list if no nodes marked
-    static <T> ArrayList<Node<T>> getMarkedNodes(ArrayList<Node<T>> nodes) {
-        for (Node<T> node : nodes) { debug("" + node + " marked:" + node.isMarked()); }
+    static <T> ArrayList<Node<T>> getMarkedNodes(List<Node<T>> nodes) {
+        //for (Node<T> node : nodes) { debug(node.toString() + " marked:" + node.isMarked()); }
         ArrayList<Node<T>> markedNodes = new ArrayList<>();
         for (Node<T> node : nodes) {
             if (node.isMarked()) {
                 markedNodes.add(node);
-                debug("node " + node.getId() + " added to marked nodes");
+                //debug("node " + node.getId() + " added to marked nodes");
             }
         }
         return markedNodes;
@@ -161,12 +161,12 @@ class Node<T> {
         this.parent = parent;
         this.id = id;
     }// Constructor
-    public T        getId() { return id; }        // Getters
+    public T        getId() { return id; }                  // Getters
     public Node<T>  getParent() { return parent; }
-    public ArrayList<Node<T>> getChildren() { return children; }
+    public List<Node<T>> getChildren() { return children; }
     // Return true if node has at least one child
     public boolean  hasChildren() { return children != null; }
-    // Return child node if found among children, otherwise null
+    /*// Return child node if found among children, otherwise null
     public Node<T>  getChild(T id) {           
         Node<T> ret = null;
         if (children != null && hasChild(id)) {
@@ -177,7 +177,7 @@ class Node<T> {
             }
         }
         return ret;
-    }// getChild()
+    }// getChild()*/
     // Return true if child with id is among children    
     public boolean  hasChild(T id) {
         boolean ret = false;
@@ -233,5 +233,5 @@ class Node<T> {
     private T id = null;                                    // Node id
     private boolean marked = false;                         // Marked flag
     private Node<T> parent = null;                          // Parent node
-    private ArrayList<Node<T>> children = null;             // Children nodes
+    private List<Node<T>> children = null;                  // Children nodes
 }// class Node<>

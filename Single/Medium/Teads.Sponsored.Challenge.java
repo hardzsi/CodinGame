@@ -2,12 +2,14 @@
 import java.util.*;
 
 class Solution {
-    static final boolean DEBUG = true;
-    
+    static final boolean DEBUG = false;
+    static final float DIG_PERCENT = 0.41f;                 // Step amount will be determined only for those nodes
+                                                            // that is above digLevel (DIG_PERCENT * lowest level)
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
         int n = in.nextInt();                               // Number of adjacency relations
         disp(n + " adjacency relations");
+        int digLevel = 0;                                   // Step amount determined only for nodes with a lower level
         List<Node<Integer>> nodes = new ArrayList<>();      // List of created nodes
         List<Integer> ids = new ArrayList<>();              // List of node ids
         List<Integer> steps = new ArrayList<>();            // Steps needed to propagate the whole ad starting at ids
@@ -15,15 +17,13 @@ class Solution {
         for (int i = 0; i < n; i++) {
             int xi = in.nextInt();                          // ID of a person which is adjacent to yi
             int yi = in.nextInt();                          // ID of a person which is adjacent to xi
-            debug(xi + " - " + yi);
+            //debug(xi + " - " + yi);
             if (!ids.contains(xi)) { ids.add(xi); }
             if (!ids.contains(yi)) { ids.add(yi); }
             Node<Integer> upper = getNode(xi, nodes);       // Get upper node form nodes array
             if (upper == null) {                            // Create and store new upper node if not found among nodes
                 upper = new Node<>(null, xi);
                 nodes.add(upper);
-            } else {
-                //debug("upper" + upper + " found in nodes - its children might be re-levelled");
             }
             Node<Integer> lower = getNode(yi, nodes);       // Get lower node form nodes array
             if (lower == null) {                            // Create and store new lower node if not found among nodes
@@ -33,32 +33,28 @@ class Solution {
             } else {                                        // Found lower node among nodes
                 lower.addParent(upper);                     // Add upper node as parent to it (lower has no parent)
                 if (lower.getLevel() != (upper.getLevel() + 1)) {
-                    debug("lowernode " + lower.getId() + " level: " + lower.getLevel() + " -> " + (upper.getLevel() + 1));
-                    lower.setLevel(upper.getLevel() + 1);       // Set lower's level to its parent + 1
-                    debug("lower" + lower + " - its children must be re-levelled");
-                    reLevelChildren(lower, nodes);                    
+                    // Set lower's level to its parent+1 and
+                    // re-level all its children accordingly
+                    reLevelNode(lower, nodes, upper.getLevel() + 1); 
                 }
             }
             upper.addChild(lower.getId());                  // Add lower node as child to upper node
         }
-        //Collections.sort(ids);
+        digLevel = Math.round(DIG_PERCENT * numLevels(nodes));
         /*
-        // Display ids
-        debug("\nnode ids sorted:");
-        for (Integer id : ids) {
-            debug(id.toString());
-        }*/
         // Display nodes
-        debug("\nnodes:");
+        debug("\n" + nodes.size() + " nodes:");
         for (Node<Integer> node : nodes) {
             debug(node.toString());
-        }
+        }*/
+        disp("\n" + numLevels(nodes) + " levels, digLevel:" + digLevel);
 
-        debug("\ndetermining steps for all ids...");
+        //debug("\ndetermining steps for all ids within digLevel...");
         // Determine the steps needed spreading from id and store these in steps array
         for (Integer id : ids) {
             Node<Integer> current = getNode(id, nodes);
-            if (current.hasChildren()) {                    // Speedup: don't determine steps for nodes without children
+            if (current.hasChildren() &&                    // Speedup: don't determine steps for nodes without children
+                current.getLevel() <= digLevel) {           // and determine steps only for nodes standing below digLevel
                 markNeighbors(current, nodes);
                 steps.add(getSteps(id, nodes));
                 // Reset mark flags of all nodes
@@ -67,30 +63,28 @@ class Solution {
                 }
             }
         }
-        Collections.sort(steps);
+        Collections.sort(steps);                            // Sorting steps to get the minimum step amount (first one)
+        /*
         // Display steps
         debug("\ndetermined steps:");
         for (Integer stp : steps) {
             debug(stp.toString());
-        }
+        }*/
         disp("\noutput:");
         System.out.println(steps.get(0));                   //  Minimal amount of steps required to propagate the ad
     }// main()
 
-    // Re-levelling all child of current node according its level 
-    static <T> void reLevelChildren(Node<T> node, List<Node<T>> nodes) {
-        List<Node<T>> children = new ArrayList<>();
-        children = node.getChildren();
-        for (Node<T> child : children) {
-            reLevelNode(child, node.getLevel() + 1);
-        }
-    }// reLevelChildren()
-
-    // Re-level a node to given level plus its children recursively
-    static <T> void reLevelNode(Node<T> node, int level) {
-        debug("re-level node " + node.getId() + " to level " + level);
+    // Re-level a node to the level given as argument, as well as all its children recursively
+    static <T> void reLevelNode(Node<T> node, List<Node<T>> nodes, int level) {
         node.setLevel(level);
-        
+        if (node.hasChildren()) {
+            List<Node<T>> children = node.getChildren();
+            for (Node<T> child : children) {
+                reLevelNode(getNode(child.getId(), nodes), nodes, node.getLevel() + 1);
+            }
+        } else {
+            return;
+        }
     }// reLevelNode()
 
     // Determine steps needed to propagate the whole ad from given start
@@ -118,23 +112,16 @@ class Solution {
     // Mark node and all its neighbors (parent and children)
     // Warning: existence of node is NOT checked!
     static <T> void markNeighbors(Node<T> node, List<Node<T>> nodes) {
-        //debug("markNeighbors called for " + node);
         node.mark();                                        // Mark the node
-        //debug("node " + node.getId() + " marked");
         if (node.hasChildren()) {                           // Mark node's children
-            //debug("node has children");
             List<Node<T>> children = node.getChildren();
             for (Node<T> c : children) {
                 Node<T> child = getNode(c.getId(), nodes);
                 child.mark();
-                //debug("child node " + child.getId() + " marked:" + child.isMarked());
             }
         }
         if (node.getParent() != null) {                     // Mark node's parent
             node.getParent().mark();
-            //debug("node's parent is " + node.getParent() + " marked:" + node.getParent().isMarked());
-        } else {
-            //debug("node has no parent");
         }
     }// markNeighbors()
 
@@ -158,6 +145,15 @@ class Solution {
         }
         return null;
     }// getNode()
+
+    // Return the number of levels (counting from 0)
+    static <T> int numLevels(List<Node<T>> nodes) {
+        int lowest = 0;
+        for (Node<T> node : nodes) {
+            lowest = Math.max(lowest, node.getLevel());
+        }
+        return lowest + 1;
+    }// numLevels()
 
     // Display string to err if DEBUG true
     static void debug(String s) {
@@ -185,18 +181,6 @@ class Node<T> {
     public List<Node<T>> getChildren() { return children; }
     // Return true if node has at least one child
     public boolean  hasChildren() { return children != null; }
-    /*// Return child node if found among children, otherwise null
-    public Node<T>  getChild(T id) {           
-        Node<T> ret = null;
-        if (children != null && hasChild(id)) {
-            for (Node<T> child : children) {
-                if (child.getId().equals(id)) {
-                    ret = child;
-                }
-            }
-        }
-        return ret;
-    }// getChild()*/
     // Return true if child with id is among children    
     public boolean  hasChild(T id) {
         boolean ret = false;
@@ -233,7 +217,7 @@ class Node<T> {
     // Return true if marked flag is set
     public boolean  isMarked() { return marked; }
     // Return string as 'node id (parent:id, children:ids)'
-    // or as 'node id (children:ids  parent:id)'
+    // or as 'node id (children:ids  parent:id) | level:level'
     @Override
     public String   toString() {
         String p = "none";

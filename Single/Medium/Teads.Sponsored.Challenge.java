@@ -7,38 +7,44 @@ class Solution {
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
         int n = in.nextInt();                               // Number of adjacency relations
-        disp(n + " adjacency relations:");
+        disp(n + " adjacency relations");
         ArrayList<Node<Integer>> nodes = new ArrayList<>(); // List of created nodes
         ArrayList<Integer> ids = new ArrayList<>();         // List of node ids
         ArrayList<Integer> steps = new ArrayList<>();       // Steps to propagate the whole ad starting from node ids 
-        // Store adjacenty relations in nodes
+        // Store adjacenty relations in nodes, also node ids
         for (int i = 0; i < n; i++) {
             int xi = in.nextInt();                          // ID of a person which is adjacent to yi
             int yi = in.nextInt();                          // ID of a person which is adjacent to xi
-            debug(xi + " - " + yi);
-            Node<Integer> upper = getNode(xi, nodes);       // Upper node always found among nodes except first time
-            if (upper == null) {
+            disp(xi + " - " + yi);
+            if (!ids.contains(xi)) { ids.add(xi); }
+            if (!ids.contains(yi)) { ids.add(yi); }
+            Node<Integer> upper = getNode(xi, nodes);       // Get upper node form nodes array
+            if (upper == null) {                            // Create and store new upper node if not found among nodes
                 upper = new Node<>(null, xi);
                 nodes.add(upper);
             }
-            Node<Integer> lower = new Node<>(upper, yi);    // Lower node always a new one
-            nodes.add(lower);
-            upper.addChild(lower.getId());
-            if (i == 0) { ids.add(xi); }
-            ids.add(yi);
-            //debug( xi + " - " + yi + " :: " + upper + " | " + lower);
+            Node<Integer> lower = getNode(yi, nodes);       // Get lower node form nodes array
+            if (lower == null) {                            // Create and store new lower node if not found among nodes
+                lower = new Node<>(upper, yi);
+                nodes.add(lower);
+            }
+            upper.addChild(lower.getId());                  // Add lower node as child to upper node
+            if (lower.getParent() == null) {                // Add upper node as parent to lower node if lower node has no parent
+                lower.addParent(upper);
+            }
         }
-        Collections.sort(ids);
+        //Collections.sort(ids);
         // Display ids
-        debug("\nnode ids:");
+        debug("\nnode ids sorted:");
         for (Integer id : ids) {
             debug("" + id);
         }
         // Display nodes
         debug("\nnodes:");
         for (Node<Integer> node : nodes) {
-            debug("" + node);
+            disp("" + node);
         }
+        debug("\nfill steps array:");
         // Fill steps array
         for (Integer id : ids) {
             markNeighbors(getNode(id, nodes), nodes);
@@ -51,6 +57,7 @@ class Solution {
         for (Integer stp : steps) {
             debug("" + stp);
         }
+        disp("\noutput:");
         System.out.println(steps.get(0));                       //  Minimal amount of steps required
     }// main()                                                  to completely propagate the ad
 
@@ -195,6 +202,11 @@ class Node<T> {
         }
         return child;
     }// addChild()
+    // Add parent node if parent was null, otherwise leave parent intact
+    public void     addParent(Node<T> p) {
+        if (parent == null) { parent = p; }
+    }// addParent()
+
     // Set and remove marked flag
     public void     mark() { marked = true; }
     public void     clearMark() { marked = false; }

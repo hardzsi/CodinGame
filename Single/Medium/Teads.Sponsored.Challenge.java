@@ -9,11 +9,13 @@ class Solution {
         int n = in.nextInt();                               // Number of adjacency relations
         disp(n + " adjacency relations:");
         ArrayList<Node<Integer>> nodes = new ArrayList<>(); // List of created nodes
+        ArrayList<Integer> ids = new ArrayList<>();         // List of node ids
+        ArrayList<Integer> steps = new ArrayList<>();       // Steps to propagate the whole ad starting from node ids 
         // Store adjacenty relations in nodes
         for (int i = 0; i < n; i++) {
             int xi = in.nextInt();                          // ID of a person which is adjacent to yi
             int yi = in.nextInt();                          // ID of a person which is adjacent to xi
-            disp(xi + " - " + yi);
+            debug(xi + " - " + yi);
             Node<Integer> upper = getNode(xi, nodes);       // Upper node always found among nodes except first time
             if (upper == null) {
                 upper = new Node<>(null, xi);
@@ -22,35 +24,53 @@ class Solution {
             Node<Integer> lower = new Node<>(upper, yi);    // Lower node always a new one
             nodes.add(lower);
             upper.addChild(lower.getId());
+            if (i == 0) { ids.add(xi); }
+            ids.add(yi);
             //debug( xi + " - " + yi + " :: " + upper + " | " + lower);
         }
-        // Display nodes
-        for (Node<Integer> node : nodes) {
-            disp("" + node);
+        Collections.sort(ids);
+        // Display ids
+        debug("\nnode ids:");
+        for (Integer id : ids) {
+            debug("" + id);
         }
-        disp("");
-        
-        int startNode = 5;
-        disp("start node:" + startNode);
-        markNeighbors(getNode(startNode, nodes), nodes);
-        int round = 1;
-        ArrayList<Node<Integer>> markedNodes;
+        // Display nodes
+        debug("\nnodes:");
+        for (Node<Integer> node : nodes) {
+            debug("" + node);
+        }
+        // Fill steps array
+        for (Integer id : ids) {
+            markNeighbors(getNode(id, nodes), nodes);
+            steps.add(getSteps(id, nodes));
+            clearMarks(nodes);
+        }
+        Collections.sort(steps);
+        // Display steps
+        debug("\nsteps:");
+        for (Integer stp : steps) {
+            debug("" + stp);
+        }
+        System.out.println(steps.get(0));                       //  Minimal amount of steps required
+    }// main()                                                  to completely propagate the ad
+
+    // Determine steps needed to propagate the whole ad from given start node
+    static <T> Integer getSteps(T id, ArrayList<Node<T>> nodes) {
+        ArrayList<Node<T>> markedNodes;
+        int step = 1;          
         do {
             debug("call getMarkedNodes:");
             markedNodes = getMarkedNodes(nodes);
-            for (Node<Integer> marked : markedNodes) {
+            for (Node<T> marked : markedNodes) {
                 debug("marked node:" + marked);
                 markNeighbors(marked, nodes);
             }
             markedNodes.clear();
-            round++;
-            debug("round:" + round);
+            step++;
+            debug("step:" + step);
         } while (!isAllNodesMarked(nodes));
-        disp("round:" + round);
-        
-        disp("");
-        System.out.println("2");                            //  Minimal amount of steps required
-    }// main()                                                  to completely propagate the ad
+        return step;
+    }// getSteps()
 
     // Mark node and all its neighbors (parent and children)
     // Warning: existence of node is NOT checked!

@@ -68,20 +68,24 @@ class Solution {
         System.out.println(steps.get(0));                   //  Minimal amount of steps required to propagate the ad
     }// main()
 
-    // Determine steps needed to propagate the whole ad from given start node
+    // Determine steps needed to propagate the whole ad from given start
+    // node id via collecting marked nodes and also mark their neighbors
     static <T> Integer getSteps(T id, List<Node<T>> nodes) {
-        ArrayList<Node<T>> markedNodes;
+        List<Node<T>> markedNodes = new ArrayList<>();
         int step = 1;          
         do {
-            //debug("call getMarkedNodes:");
-            markedNodes = getMarkedNodes(nodes);
+            // Collect marked nodes
+            for (Node<T> node : nodes) {
+                if (node.isMarked()) {
+                    markedNodes.add(node);
+                }
+            }
+            // Mark neighbors of marked nodes (cannot be concatenated with for() cycle above)
             for (Node<T> marked : markedNodes) {
-                //debug("marked node:" + marked);
                 markNeighbors(marked, nodes);
             }
             markedNodes.clear();
             step++;
-            //debug("step:" + step);
         } while (!isAllNodesMarked(nodes));
         return step;
     }// getSteps()
@@ -130,19 +134,6 @@ class Solution {
         return null;
     }// getNode()
 
-    // Return list of marked nodes - an empty list if no nodes marked
-    static <T> ArrayList<Node<T>> getMarkedNodes(List<Node<T>> nodes) {
-        //for (Node<T> node : nodes) { debug(node.toString() + " marked:" + node.isMarked()); }
-        ArrayList<Node<T>> markedNodes = new ArrayList<>();
-        for (Node<T> node : nodes) {
-            if (node.isMarked()) {
-                markedNodes.add(node);
-                //debug("node " + node.getId() + " added to marked nodes");
-            }
-        }
-        return markedNodes;
-    }// getMarkedNodes()
-
     // Display string to err if DEBUG true
     static void debug(String s) {
         if (DEBUG) {
@@ -155,6 +146,8 @@ class Solution {
     }// disp()
 }// class Solution
 
+
+// <<<<<<<<<<<<<<<<< Node class >>>>>>>>>>>>>>>>>>>
 // Generic node class with id and flag to be marked
 class Node<T> {
     public Node(Node<T> parent, T id) {                     // Constructor

@@ -13,11 +13,16 @@ class Solution {
         List<Node<Integer>> nodes = new ArrayList<>();      // List of created nodes
         HashSet<Integer>      ids = new HashSet<>();        // Set of node ids
         List<Integer>       steps = new ArrayList<>();      // Steps needed to propagate the whole ad starting at ids
+        //List<Integer>       check = new ArrayList<>();
+        //check.add(835); check.add(942);check.add(520);check.add(110);
         // Store adj.relations, levels and ids of nodes
         for (int i = 0; i < n; i++) {
             int xi = in.nextInt();                          // ID of a person which is adjacent to yi
             int yi = in.nextInt();                          // ID of a person which is adjacent to xi
-            debug(xi + " - " + yi);
+            //debug(xi + " - " + yi);
+            /*if (check.contains(xi) || check.contains(yi)) {
+                debug(xi + " - " + yi);
+            }*/
             ids.add(xi); ids.add(yi);
             Node<Integer> upper = getNode(xi, nodes);       // Get upper node from nodes array
             if (upper == null) {                            // Create and store new upper node if not found among nodes
@@ -46,18 +51,27 @@ class Solution {
         for (Node<Integer> node : nodes) {
             debug(node.toString());
         }*/
-        disp("\n" + numLevels(nodes) + " levels, digLevel:" + digLevel);
+        disp("\n" + numLevels(nodes) + " levels, digLevel:" + digLevel + ", " + nodes.size() + " nodes in nodes array");
+
+        int nodeWOparent = 0;
+        for (Node<Integer> node : nodes) {
+            if (node.getParent() == null) {
+                disp(node.toString());
+                nodeWOparent++;
+            }
+        }
+        disp("\nThere are " + nodeWOparent + " nodes without parent!");        
 
         debug("\ndetermining steps for all ids within digLevel...");
         // Determine the steps needed spreading from id and store these in steps array
         for (Integer id : ids) {
             Node<Integer> current = getNode(id, nodes);
-            debug("check node: " + current);
+            debug("check: " + current);
             if (current.hasChildren() &&                    // Speedup: don't determine steps for nodes without children
                 current.getLevel() <= digLevel) {           // and determine steps only for nodes standing below digLevel
-                debug("start markNeighbors");
+                //debug("starting markNeighbors");
                 markNeighbors(current, nodes);
-                debug("markNeighbors finished, adding " + current.getId() + " to steps:");
+                //debug("markNeighbors finished, adding " + current.getId() + " to steps:");
                 steps.add(getSteps(id, nodes));
                 debug("resetting mark flags");
                 // Reset mark flags of all nodes
@@ -90,7 +104,7 @@ class Solution {
     // Determine steps needed to propagate the whole ad from given start
     // node id via collecting marked nodes and also mark their neighbors
     static <T> Integer getSteps(T id, List<Node<T>> nodes) {
-        debug("started getSteps with node id: " + id + " | " + nodes.size() + " nodes are in nodes");
+        debug("starting getSteps with node " + id);
         List<Node<T>> markedNodes = new ArrayList<>();
         int step = 1;
         boolean allMarked = true;
@@ -120,7 +134,7 @@ class Solution {
     }// getSteps()
 
     // Mark node and all its neighbors (parent and children)
-    // Warning: existence of node is NOT checked!
+    // Warning: existence of node NOT checked, but come from nodes array so it should exist
     static <T> void markNeighbors(Node<T> node, List<Node<T>> nodes) {
         node.mark();                                        // Mark the node
         if (node.hasChildren()) {                           // Mark node's children
@@ -194,7 +208,13 @@ class Node<T> {
         }
     }// addChild()
 
-    public void     addParent(Node<T> p) { parent = p; }    // Add parent node. Warning: not checked if parent existed
+    public void     addParent(Node<T> p) { 
+        if (parent != null) {
+            System.err.println("parent " + parent.getId() + " existed, when new parent " + p.getId() + " would be added");
+        }
+        parent = p;
+    
+    }    // Add parent node. Warning: not checked if parent existed
     public void     setLevel(int lev) { level = lev; }
     public void     mark() { marked = true; }               // Set marked flag
     public void     clearMark() { marked = false; }         // Remove marked flag

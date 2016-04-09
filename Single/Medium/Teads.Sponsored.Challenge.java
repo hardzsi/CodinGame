@@ -11,21 +11,20 @@ class Solution {
         disp(n + " adjacency relations");
         int digLevel = 0;                                   // Step amount determined only for nodes with a lower level
         List<Node<Integer>> nodes = new ArrayList<>();      // List of created nodes
-        List<Integer>       ids = new ArrayList<>();        // List of node ids
+        HashSet<Integer>      ids = new HashSet<>();        // Set of node ids
         List<Integer>       steps = new ArrayList<>();      // Steps needed to propagate the whole ad starting at ids
-        // Store adjacenty relations in nodes, also node ids
+        // Store adj.relations, levels and ids of nodes
         for (int i = 0; i < n; i++) {
             int xi = in.nextInt();                          // ID of a person which is adjacent to yi
             int yi = in.nextInt();                          // ID of a person which is adjacent to xi
             debug(xi + " - " + yi);
-            if (!ids.contains(xi)) { ids.add(xi); }
-            if (!ids.contains(yi)) { ids.add(yi); }
-            Node<Integer> upper = getNode(xi, nodes);       // Get upper node form nodes array
+            ids.add(xi); ids.add(yi);
+            Node<Integer> upper = getNode(xi, nodes);       // Get upper node from nodes array
             if (upper == null) {                            // Create and store new upper node if not found among nodes
                 upper = new Node<>(null, xi);
                 nodes.add(upper);
             }
-            Node<Integer> lower = getNode(yi, nodes);       // Get lower node form nodes array
+            Node<Integer> lower = getNode(yi, nodes);       // Get lower node from nodes array
             if (lower == null) {                            // Create and store new lower node if not found among nodes
                 lower = new Node<>(upper, yi);
                 lower.setLevel(upper.getLevel() + 1);
@@ -38,7 +37,7 @@ class Solution {
                     reLevelNode(lower, nodes, upper.getLevel() + 1); 
                 }
             }
-            upper.addChild(lower.getId());                  // Add lower node as child to upper node
+            upper.addChild(lower);                          // Add lower node as child to upper node
         }
         digLevel = Math.round(DIG_PERCENT * numLevels(nodes));
         //digLevel = n < 500 ? numLevels(nodes) : Math.round(DIG_PERCENT * numLevels(nodes));      
@@ -174,50 +173,34 @@ class Node<T> {
     public Node(Node<T> parent, T id) {                     // Constructor
         this.parent = parent;
         this.id = id;
-    }// Constructor
-    public T        getId() { return id; }                  // Getters
+    }
+
+    public T        getId() { return id; }
     public int      getLevel() { return level; }
     public Node<T>  getParent() { return parent; }
     public List<Node<T>> getChildren() { return children; }
+
     // Return true if node has at least one child
     public boolean  hasChildren() { return children != null; }
-    // Return true if child with id is among children    
-    public boolean  hasChild(T id) {
-        boolean ret = false;
-        if (children != null) {
-            for (Node<T> child : children) {
-                if (child.getId().equals(id)) {
-                    ret = true;
-                }
-            }        
-        }
-        return ret;
-    }// hasChild()
-    // Add child with id and return child node, if
-    // node wasn't among children, otherwise return null
-    public Node<T>  addChild(T id) {
-        Node<T> child = null;
+
+    // Add child node if node wasn't among children
+    public void addChild(Node<T> child) {      
         if (children == null) {
             children = new ArrayList<>();
         }
-        if (!hasChild(id)) {
-            child = new Node<T>(parent, id);
+        if (!children.contains(child)) {
+            child = new Node<T>(parent, child.getId());
             children.add(child);
         }
-        return child;
     }// addChild()
-    // Add parent node. Warning: not checked if parent existed before
-    public void     addParent(Node<T> p) { parent = p; }
+
+    public void     addParent(Node<T> p) { parent = p; }    // Add parent node. Warning: not checked if parent existed
     public void     setLevel(int lev) { level = lev; }
-    // Set and remove marked flag
-    public void     mark() { marked = true; }
-    public void     clearMark() { marked = false; }
-    // Return true if marked flag is set
-    public boolean  isMarked() { return marked; }
-    // Return string as 'node id (parent:id, children:ids)'
-    // or as 'node id (children:ids  parent:id) | level:level'
-    @Override
-    public String   toString() {
+    public void     mark() { marked = true; }               // Set marked flag
+    public void     clearMark() { marked = false; }         // Remove marked flag
+    public boolean  isMarked() { return marked; }           // Return true if marked flag is set
+    @Override 
+    public String   toString() {                            // Return 'node id (children:ids  parent:id) | level:level'
         String p = "none";
         if (parent != null) {
             p = parent.getId().toString();
@@ -229,12 +212,11 @@ class Node<T> {
                 buf.append(children.get(i).getId()).append(i < children.size() - 1? "," : "");
             }
         }
-        //return "node " + id + " (parent:" + p + ", children:" + buf.toString() + ")";
         return "node " + id + " (children:" + buf.toString() + "  parent:" + p + ") | level:" + level;
     }// toString()
 
-    private T id = null;                                    // id
-    private int level = 0;                                  // level (root = 0)
+    private T       id = null;                              // id
+    private int     level = 0;                              // level (root = 0)
     private boolean marked = false;                         // marked flag
     private Node<T> parent = null;                          // parent node
     private List<Node<T>> children = null;                  // children nodes

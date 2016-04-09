@@ -3,7 +3,7 @@ import java.util.*;
 
 class Solution {
     static final boolean DEBUG = false;
-    static final float DIG_PERCENT = 0.41f;                 // Step amount will be determined only for those nodes
+    static final float DIG_PERCENT = 0.5f;                  // Step amount will be determined only for those nodes
                                                             // that is above digLevel (DIG_PERCENT * lowest level)
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
@@ -12,8 +12,8 @@ class Solution {
         int digLevel = 0;                                   // Step amount determined only for nodes with a lower level
         List<Node<Integer>> nodes = new ArrayList<>();      // List of created nodes
         List<Integer>       steps = new ArrayList<>();      // Steps needed to propagate the whole ad starting at a node
-        Map<Integer, Node<Integer>> nodesMap = new HashMap<>(); // Store nodes in map for quicker access
-
+        Map<Integer, Node<Integer>>
+                            nodesMap = new HashMap<>();     // Store nodes also in a map with id as key for quicker access
         // Build graph storing adjacency relations in nodes
         for (int i = 0; i < n; i++) {
             int xi = in.nextInt();                          // ID of a person which is adjacent to yi
@@ -35,7 +35,7 @@ class Solution {
             } else {                                        // Found lower node among nodes
                 lower.addParent(upper);                     // Add upper node as parent to lower node
                 if (lower.getLevel() != (upper.getLevel() + 1)) {
-                    reLevelNode(lower, upper, nodesMap, upper.getLevel() + 1); // Re-level node's all children and other parents
+                    reLevelNode(lower, upper, nodesMap, upper.getLevel() + 1); // Re-level node's children & other parents
                 }
             }
             upper.addChild(lower);                          // Add lower node as child to upper node
@@ -43,40 +43,20 @@ class Solution {
         // Set how deep we will dig as trying to find lowest spread count (steps)
         digLevel = Math.round(DIG_PERCENT * numLevels(nodes));
         //digLevel = n < 500 ? numLevels(nodes) : Math.round(DIG_PERCENT * numLevels(nodes));      
-        // Display how many nodes have given amount of parents 
-        /*int[] count = new int[10];
-        for (Node<Integer> node : nodes) {
-            int p = node.getParents().size();
-            count[p]++;
-        }
-        for (int i = 0; i < count.length; ++i) {
-            disp(i + " parents: " + count[i]);
-        }*/
-        // Display nodes
-        /*debug("\n" + nodes.size() + " nodes:");
-        for (Node<Integer> node : nodes) {
-            disp(node.toString());
-        }*/
+
         disp("\n" + numLevels(nodes) + " levels, digLevel:" + digLevel + ", " + nodes.size() + " nodes in nodes array");
 
-        debug("\ndetermining steps for all ids within digLevel...");
         // Determine then store steps needed spreading from current node
         for (Node<Integer> current : nodes) {
-            debug("check: " + current);
             if (current.hasChildren() &&                    // Speedup: don't determine steps for nodes without children
-                current.getLevel() <= digLevel) {           // and determine steps only for nodes standing below digLevel
-                //debug("starting markNeighbors");
+                current.getLevel() <= digLevel) {           // and determine steps only for nodes standing above digLevel
                 markNeighbors(current, nodesMap);
-                //debug("markNeighbors finished, adding " + current.getId() + " to steps:");
                 steps.add(getSteps(current.getId(), nodes, nodesMap));
-                debug("resetting mark flags");
                 // Reset mark flags of all nodes
-                for (Node<Integer> node : nodes) {
-                    node.clearMark();
-                }
+                for (Node<Integer> node : nodes) { node.clearMark(); }
             }
         }
-        Collections.sort(steps);                            // Sorting steps to get the minimum step amount (first one)
+        Collections.sort(steps);                            // Sort steps to get the minimum step amount (the first one)
         // Display steps
         /*debug("\ndetermined steps:");
         for (Integer stp : steps) {
@@ -86,33 +66,24 @@ class Solution {
         System.out.println(steps.get(0));                   //  Minimal amount of steps required to propagate the ad
     }// main()
 
-    // Re-level a node to the level given as argument, as well as all its children recursively
+    // Set node to level and re-level all its parents
+    // (except blocked one) and children recursively
     static <T> void reLevelNode(Node<T> node, Node<T> blocked, Map<T, Node<T>> nodesMap, int level) {
-        //disp("re-levelling " + node + "  to level " + level + " , upper is:" + upper.getId());
         node.setLevel(level);
-        if (node.hasParents()) {
-            Set<Node<T>> parents = node.getParents();
-            debug("node " + node.getId() + " has " + parents.size() + " parents");
-            for (Node<T> parent : parents) {
-                if (!parent.equals(blocked)) {
-                    debug("parent is:" + parent.getId() + ", blocked is:" + blocked.getId());
-                    //reLevelNode(getNode(parent.getId(), nodes), blocked, nodes, node.getLevel() - 1);                
-                }
+        Set<Node<T>> parents = node.getParents();           // Set is empty if node has NO parents
+        for (Node<T> parent : parents) {
+            if (!parent.equals(blocked) && (parent.getLevel() != node.getLevel() - 1)) {
+                reLevelNode(nodesMap.get(parent.getId()), blocked, nodesMap, node.getLevel() - 1);                
             }
         }
-        if (node.hasChildren()) {
-            Set<Node<T>> children = node.getChildren();
-            for (Node<T> child : children) {
-                //disp(" -> ");
-                //reLevelNode(getNode(child.getId(), nodes), blocked, nodes, node.getLevel() + 1);
-                reLevelNode(nodesMap.get(child.getId()), blocked, nodesMap, node.getLevel() + 1);
-            }
+        Set<Node<T>> children = node.getChildren();         // Set is empty if node has NO children 
+        for (Node<T> child : children) {
+            reLevelNode(nodesMap.get(child.getId()), blocked, nodesMap, node.getLevel() + 1);
         }
     }// reLevelNode()
 
     // Determine steps needed to propagate the whole ad from given start node
     static <T> Integer getSteps(T id, List<Node<T>> nodes, Map<T, Node<T>> nodesMap) {
-        debug("starting getSteps with node " + id);
         List<Node<T>> markedNodes = new ArrayList<>();      // Collect marked nodes per iteration - Set<> would be faster?
         int step = 1;
         boolean allMarked;
@@ -121,7 +92,7 @@ class Solution {
             for (Node<T> node : nodes) {
                 if (node.isMarked()) { markedNodes.add(node); }
             }
-            // Mark neighbors of marked nodes (cannot be concatenated with for() cycle above)
+            // Mark neighbors of marked nodes (Note: cannot be concatenated with for cycle above)
             for (Node<T> marked : markedNodes) {
                 markNeighbors(marked, nodesMap);
             }
@@ -132,7 +103,6 @@ class Solution {
             for (Node<T> node : nodes) {
                 if (!node.isMarked()) { allMarked = false; }
             }
-            debug("step " + step);
         } while (!allMarked);
         return step;
     }// getSteps()
@@ -145,7 +115,6 @@ class Solution {
         neighbors.addAll(node.getParents());
         for (Node<T> neighbor : neighbors) {                // Mark node's parents and children
             nodesMap.get(neighbor.getId()).mark();
-            //getNode(neighbor.getId(), nodes).mark();
         }
     }// markNeighbors()
 
@@ -153,7 +122,7 @@ class Solution {
     static <T> int numLevels(List<Node<T>> nodes) {
         int lowest = 0;
         for (Node<T> node : nodes) {
-            lowest = Math.max(lowest, node.getLevel());
+            lowest = Math.max(lowest, node.getLevel());     // lowest = lowest>node.getLevel()? lowest:node.getLevel()
         }
         return lowest + 1;
     }// numLevels()

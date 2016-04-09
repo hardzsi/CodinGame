@@ -13,54 +13,43 @@ class Solution {
         List<Node<Integer>> nodes = new ArrayList<>();      // List of created nodes
         HashSet<Integer>      ids = new HashSet<>();        // Set of node ids
         List<Integer>       steps = new ArrayList<>();      // Steps needed to propagate the whole ad starting at ids
-        //List<Integer>       check = new ArrayList<>();
-        //check.add(835); check.add(942);check.add(520);check.add(110);
+
         // Store adj.relations, levels and ids of nodes
         for (int i = 0; i < n; i++) {
             int xi = in.nextInt();                          // ID of a person which is adjacent to yi
             int yi = in.nextInt();                          // ID of a person which is adjacent to xi
-            //debug(xi + " - " + yi);
-            /*if (check.contains(xi) || check.contains(yi)) {
-                debug(xi + " - " + yi);
-            }*/
+            debug(xi + " - " + yi);
             ids.add(xi); ids.add(yi);
             Node<Integer> upper = getNode(xi, nodes);       // Get upper node from nodes array
             if (upper == null) {                            // Create and store new upper node if not found among nodes
-                upper = new Node<>(null, xi);
+                upper = new Node<>(xi);
                 nodes.add(upper);
             }
             Node<Integer> lower = getNode(yi, nodes);       // Get lower node from nodes array
             if (lower == null) {                            // Create and store new lower node if not found among nodes
-                lower = new Node<>(upper, yi);
+                lower = new Node<>(yi);
+                lower.addParent(upper);                     // Add upper node as parent to lower node                
                 lower.setLevel(upper.getLevel() + 1);
                 nodes.add(lower);
             } else {                                        // Found lower node among nodes
-                lower.addParent(upper);                     // Add upper node as parent to it (lower has no parent)
+                lower.addParent(upper);                     // Add upper node as parent to lower node
                 if (lower.getLevel() != (upper.getLevel() + 1)) {
                     // Set lower's level to its parent+1 and
                     // re-level all its children accordingly
-                    reLevelNode(lower, nodes, upper.getLevel() + 1); 
+                    reLevelNode(lower, upper, nodes, upper.getLevel() + 1); 
                 }
             }
+            //lower.addParent(upper);                         // Add upper node as parent to lower node
             upper.addChild(lower);                          // Add lower node as child to upper node
         }
         digLevel = Math.round(DIG_PERCENT * numLevels(nodes));
         //digLevel = n < 500 ? numLevels(nodes) : Math.round(DIG_PERCENT * numLevels(nodes));      
-        /*// Display nodes
-        debug("\n" + nodes.size() + " nodes:");
+        // Display nodes
+        /*debug("\n" + nodes.size() + " nodes:");
         for (Node<Integer> node : nodes) {
             debug(node.toString());
         }*/
         disp("\n" + numLevels(nodes) + " levels, digLevel:" + digLevel + ", " + nodes.size() + " nodes in nodes array");
-
-        int nodeWOparent = 0;
-        for (Node<Integer> node : nodes) {
-            if (node.getParent() == null) {
-                disp(node.toString());
-                nodeWOparent++;
-            }
-        }
-        disp("\nThere are " + nodeWOparent + " nodes without parent!");        
 
         debug("\ndetermining steps for all ids within digLevel...");
         // Determine the steps needed spreading from id and store these in steps array
@@ -91,12 +80,19 @@ class Solution {
     }// main()
 
     // Re-level a node to the level given as argument, as well as all its children recursively
-    static <T> void reLevelNode(Node<T> node, List<Node<T>> nodes, int level) {
+    static <T> void reLevelNode(Node<T> node, Node<T> upper, List<Node<T>> nodes, int level) {
+        disp("re-levelling " + node + "  to level " + level + " , upper is:" + upper.getId());
         node.setLevel(level);
+        /*if (node.hasParents()) {
+            Set<Node<T>> parents = node.getParents();
+            for (Node<T> parent : parents) {
+                reLevelNode(getNode(parent.getId(), nodes), upper, nodes, node.getLevel() - 1);
+            }
+        }*/
         if (node.hasChildren()) {
-            List<Node<T>> children = node.getChildren();
+            Set<Node<T>> children = node.getChildren();
             for (Node<T> child : children) {
-                reLevelNode(getNode(child.getId(), nodes), nodes, node.getLevel() + 1);
+                reLevelNode(getNode(child.getId(), nodes), upper, nodes, node.getLevel() + 1);
             }
         }
     }// reLevelNode()
@@ -138,14 +134,18 @@ class Solution {
     static <T> void markNeighbors(Node<T> node, List<Node<T>> nodes) {
         node.mark();                                        // Mark the node
         if (node.hasChildren()) {                           // Mark node's children
-            List<Node<T>> children = node.getChildren();
+            Set<Node<T>> children = node.getChildren();
             for (Node<T> c : children) {
                 Node<T> child = getNode(c.getId(), nodes);
                 child.mark();
             }
         }
-        if (node.getParent() != null) {                     // Mark node's parent
-            node.getParent().mark();
+        if (node.hasParents()) {                           // Mark node's parents
+            Set<Node<T>> parents = node.getParents();
+            for (Node<T> p : parents) {
+                Node<T> parent = getNode(p.getId(), nodes);
+                parent.mark();
+            }
         }
     }// markNeighbors()
 
@@ -168,76 +168,74 @@ class Solution {
         return lowest + 1;
     }// numLevels()
 
-    // Display string to err if DEBUG true
+    // Display string to err either if DEBUG true or always
     static void debug(String s) {
-        if (DEBUG) {
-            System.err.println(s);
-        }
-    }// debug()
-    // Display string to err
-    static void disp(String s) {
-        System.err.println(s);
-    }// disp()
+        if (DEBUG) { System.err.println(s); }
+    }
+    static void disp(String s) { System.err.println(s); }
 }// class Solution
 
 
 // <<<<<<<<<<<<<<<<< Node class >>>>>>>>>>>>>>>>>>>
 // Generic node class with id and flag to be marked
 class Node<T> {
-    public Node(Node<T> parent, T id) {                     // Constructor
-        this.parent = parent;
+    public Node(T id) {                                     // Constructor
         this.id = id;
     }
 
-    public T        getId() { return id; }
-    public int      getLevel() { return level; }
-    public Node<T>  getParent() { return parent; }
-    public List<Node<T>> getChildren() { return children; }
-
-    // Return true if node has at least one child
-    public boolean  hasChildren() { return children != null; }
-
-    // Add child node if node wasn't among children
-    public void addChild(Node<T> child) {      
-        if (children == null) {
-            children = new ArrayList<>();
+    // parents
+    public Set<Node<T>> getParents() { return parents; }
+    public boolean      hasParents() { return parents.size() > 0; }
+    public void         addParent(Node<T> parent) {         // Add parent node if node wasn't among parents
+        if (!parents.contains(parent)) {
+            parents.add(parent);
         }
+    }
+
+    // children
+    public Set<Node<T>> getChildren() { return children; }
+    public boolean      hasChildren() { return children.size() > 0; }   // True if node has at least one child
+    public void         addChild(Node<T> child) {           // Add child node if node wasn't among children
         if (!children.contains(child)) {
-            child = new Node<T>(parent, child.getId());
             children.add(child);
         }
-    }// addChild()
+    }
 
-    public void     addParent(Node<T> p) { 
-        if (parent != null) {
-            System.err.println("parent " + parent.getId() + " existed, when new parent " + p.getId() + " would be added");
-        }
-        parent = p;
-    
-    }    // Add parent node. Warning: not checked if parent existed
+    // level
+    public int      getLevel() { return level; }
     public void     setLevel(int lev) { level = lev; }
+
+    // mark
     public void     mark() { marked = true; }               // Set marked flag
     public void     clearMark() { marked = false; }         // Remove marked flag
     public boolean  isMarked() { return marked; }           // Return true if marked flag is set
+
+    // other
+    public T        getId() { return id; }    
     @Override 
-    public String   toString() {                            // Return 'node id (children:ids  parent:id) | level:level'
-        String p = "none";
-        if (parent != null) {
-            p = parent.getId().toString();
-        }
-        StringBuffer buf = new StringBuffer("none");
-        if (children != null) {
-            buf.setLength(0);
-            for (int i = 0; i < children.size(); ++i) {
-                buf.append(children.get(i).getId()).append(i < children.size() - 1? "," : "");
+    public String   toString() {                            // Return 'node id (children:ids  parents:ids) | level:level'
+        StringBuffer pBuf = new StringBuffer("none");
+        if (parents.size() > 0) {
+            pBuf.setLength(0);
+            Object[] pArr = parents.toArray();
+            for (int i = 0; i < pArr.length; ++i) {
+                pBuf.append(((Node<T>)pArr[i]).getId()).append(i < parents.size() - 1? "," : "");
             }
         }
-        return "node " + id + " (children:" + buf.toString() + "  parent:" + p + ") | level:" + level;
+        StringBuffer cBuf = new StringBuffer("none");
+        if (children.size() > 0) {
+            cBuf.setLength(0);
+            Object[] cArr = children.toArray();
+            for (int i = 0; i < cArr.length; ++i) {
+                cBuf.append(((Node<T>)cArr[i]).getId()).append(i < children.size() - 1? "," : "");
+            }
+        }
+        return "node " + id + " (children:" + cBuf.toString() + "  parents:" + pBuf.toString() + ") | level:" + level;
     }// toString()
 
     private T       id = null;                              // id
     private int     level = 0;                              // level (root = 0)
     private boolean marked = false;                         // marked flag
-    private Node<T> parent = null;                          // parent node
-    private List<Node<T>> children = null;                  // children nodes
+    private Set<Node<T>> parents = new HashSet<>();         // parent nodes
+    private Set<Node<T>> children = new HashSet<>();        // children nodes
 }// class Node<>

@@ -11,13 +11,13 @@ class Solution {
         disp(n + " adjacency relations");
         int digLevel = 0;                                   // Step amount determined only for nodes with a lower level
         List<Node<Integer>> nodes = new ArrayList<>();      // List of created nodes
-        List<Integer> ids = new ArrayList<>();              // List of node ids
-        List<Integer> steps = new ArrayList<>();            // Steps needed to propagate the whole ad starting at ids
+        List<Integer>       ids = new ArrayList<>();        // List of node ids
+        List<Integer>       steps = new ArrayList<>();      // Steps needed to propagate the whole ad starting at ids
         // Store adjacenty relations in nodes, also node ids
         for (int i = 0; i < n; i++) {
             int xi = in.nextInt();                          // ID of a person which is adjacent to yi
             int yi = in.nextInt();                          // ID of a person which is adjacent to xi
-            //debug(xi + " - " + yi);
+            debug(xi + " - " + yi);
             if (!ids.contains(xi)) { ids.add(xi); }
             if (!ids.contains(yi)) { ids.add(yi); }
             Node<Integer> upper = getNode(xi, nodes);       // Get upper node form nodes array
@@ -41,22 +41,26 @@ class Solution {
             upper.addChild(lower.getId());                  // Add lower node as child to upper node
         }
         digLevel = Math.round(DIG_PERCENT * numLevels(nodes));
-        /*
-        // Display nodes
+        //digLevel = n < 500 ? numLevels(nodes) : Math.round(DIG_PERCENT * numLevels(nodes));      
+        /*// Display nodes
         debug("\n" + nodes.size() + " nodes:");
         for (Node<Integer> node : nodes) {
             debug(node.toString());
         }*/
         disp("\n" + numLevels(nodes) + " levels, digLevel:" + digLevel);
 
-        //debug("\ndetermining steps for all ids within digLevel...");
+        debug("\ndetermining steps for all ids within digLevel...");
         // Determine the steps needed spreading from id and store these in steps array
         for (Integer id : ids) {
             Node<Integer> current = getNode(id, nodes);
+            debug("check node: " + current);
             if (current.hasChildren() &&                    // Speedup: don't determine steps for nodes without children
                 current.getLevel() <= digLevel) {           // and determine steps only for nodes standing below digLevel
+                debug("start markNeighbors");
                 markNeighbors(current, nodes);
+                debug("markNeighbors finished, adding " + current.getId() + " to steps:");
                 steps.add(getSteps(id, nodes));
+                debug("resetting mark flags");
                 // Reset mark flags of all nodes
                 for (Node<Integer> node : nodes) {
                     node.clearMark();
@@ -64,8 +68,7 @@ class Solution {
             }
         }
         Collections.sort(steps);                            // Sorting steps to get the minimum step amount (first one)
-        /*
-        // Display steps
+        /*// Display steps
         debug("\ndetermined steps:");
         for (Integer stp : steps) {
             debug(stp.toString());
@@ -82,16 +85,16 @@ class Solution {
             for (Node<T> child : children) {
                 reLevelNode(getNode(child.getId(), nodes), nodes, node.getLevel() + 1);
             }
-        } else {
-            return;
         }
     }// reLevelNode()
 
     // Determine steps needed to propagate the whole ad from given start
     // node id via collecting marked nodes and also mark their neighbors
     static <T> Integer getSteps(T id, List<Node<T>> nodes) {
+        debug("started getSteps with node id: " + id + " | " + nodes.size() + " nodes are in nodes");
         List<Node<T>> markedNodes = new ArrayList<>();
-        int step = 1;          
+        int step = 1;
+        boolean allMarked = true;
         do {
             // Collect marked nodes
             for (Node<T> node : nodes) {
@@ -105,7 +108,15 @@ class Solution {
             }
             markedNodes.clear();
             step++;
-        } while (!isAllNodesMarked(nodes));
+            // Check if all nodes are marked
+            allMarked = true;
+            for (Node<T> node : nodes) {
+                if (!node.isMarked()) {
+                    allMarked = false;
+                }
+            }
+            debug("step " + step);
+        } while (!allMarked);
         return step;
     }// getSteps()
 
@@ -124,17 +135,6 @@ class Solution {
             node.getParent().mark();
         }
     }// markNeighbors()
-
-    // Return true if all nodes are marked
-    static <T> boolean isAllNodesMarked(List<Node<T>> nodes) {
-        boolean allMarked = true;
-        for (Node<T> node : nodes) {
-            if (!node.isMarked()) {
-                allMarked = false;
-            }
-        }
-        return allMarked;
-    }// isAllNodesMarked()
 
     // Rerurn node if found in nodes array, otherwise null
     static <T> Node<T> getNode(T id, List<Node<T>> nodes) {
@@ -206,10 +206,8 @@ class Node<T> {
         }
         return child;
     }// addChild()
-    // Add parent node if parent was null, otherwise leave parent intact
-    public void     addParent(Node<T> p) {
-        if (parent == null) { parent = p; }
-    }// addParent()
+    // Add parent node. Warning: not checked if parent existed before
+    public void     addParent(Node<T> p) { parent = p; }
     public void     setLevel(int lev) { level = lev; }
     // Set and remove marked flag
     public void     mark() { marked = true; }

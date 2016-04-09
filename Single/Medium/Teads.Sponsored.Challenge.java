@@ -11,15 +11,13 @@ class Solution {
         disp(n + " adjacency relations");
         int digLevel = 0;                                   // Step amount determined only for nodes with a lower level
         List<Node<Integer>> nodes = new ArrayList<>();      // List of created nodes
-        HashSet<Integer>      ids = new HashSet<>();        // Set of node ids
         List<Integer>       steps = new ArrayList<>();      // Steps needed to propagate the whole ad starting at ids
 
-        // Store adj.relations, levels and ids of nodes
+        // Build graph storing adjacency relations in nodes
         for (int i = 0; i < n; i++) {
             int xi = in.nextInt();                          // ID of a person which is adjacent to yi
             int yi = in.nextInt();                          // ID of a person which is adjacent to xi
             //debug(xi + " - " + yi);
-            ids.add(xi); ids.add(yi);
             Node<Integer> upper = getNode(xi, nodes);       // Get upper node from nodes array
             if (upper == null) {                            // Create and store new upper node if not found among nodes
                 upper = new Node<>(xi);
@@ -41,7 +39,7 @@ class Solution {
         }
         digLevel = Math.round(DIG_PERCENT * numLevels(nodes));
         //digLevel = n < 500 ? numLevels(nodes) : Math.round(DIG_PERCENT * numLevels(nodes));      
-        // Count nodes
+        // Display how many nodes have given amount of parents 
         /*int[] count = new int[10];
         for (Node<Integer> node : nodes) {
             int p = node.getParents().size();
@@ -58,16 +56,16 @@ class Solution {
         disp("\n" + numLevels(nodes) + " levels, digLevel:" + digLevel + ", " + nodes.size() + " nodes in nodes array");
 
         debug("\ndetermining steps for all ids within digLevel...");
-        // Determine the steps needed spreading from id and store these in steps array
-        for (Integer id : ids) {
-            Node<Integer> current = getNode(id, nodes);
+        // Determine then store steps needed spreading from current node
+        for (Node<Integer> current : nodes) {
+            //Node<Integer> current = getNode(id, nodes);
             debug("check: " + current);
             if (current.hasChildren() &&                    // Speedup: don't determine steps for nodes without children
                 current.getLevel() <= digLevel) {           // and determine steps only for nodes standing below digLevel
                 //debug("starting markNeighbors");
                 markNeighbors(current, nodes);
                 //debug("markNeighbors finished, adding " + current.getId() + " to steps:");
-                steps.add(getSteps(id, nodes));
+                steps.add(getSteps(current.getId(), nodes));
                 debug("resetting mark flags");
                 // Reset mark flags of all nodes
                 for (Node<Integer> node : nodes) {

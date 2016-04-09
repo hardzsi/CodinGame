@@ -1,14 +1,13 @@
-// Power of Thor - Code size 383
+// Power of Thor - Code size 345
 import java.util.*;
 class Player{
-	public static void main(String[] r){
+	public static void main(String[] a){
 		Scanner s=new Scanner(System.in);
 		int x=s.nextInt(),y=s.nextInt(),X=s.nextInt(),Y=s.nextInt();
-		while(true){
-			int[] c={83,13,78,69,13,87,Y,X};
+		while(y>0){
 			s.next();
-			Y+=Math.signum(y-Y);X+=Math.signum(x-X);
-			System.out.println(""+(char)c[c[6]-Y+1]+(char)c[c[7]-X+4]);
+			System.out.println((y<Y?"N":y>Y?"S":"")+(x<X?"W":x>X?"E":""));
+			Y+=y<Y?-1:y>Y?1:0;X+=x<X?-1:x>X?1:0;
 		}
 	}
 }

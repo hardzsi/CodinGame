@@ -11,32 +11,36 @@ class Solution {
         disp(n + " adjacency relations");
         int digLevel = 0;                                   // Step amount determined only for nodes with a lower level
         List<Node<Integer>> nodes = new ArrayList<>();      // List of created nodes
-        List<Integer>       steps = new ArrayList<>();      // Steps needed to propagate the whole ad starting at ids
+        List<Integer>       steps = new ArrayList<>();      // Steps needed to propagate the whole ad starting at a node
+        Map<Integer, Node<Integer>> nodesMap = new HashMap<>(); // Store nodes in map for quicker access
 
         // Build graph storing adjacency relations in nodes
         for (int i = 0; i < n; i++) {
             int xi = in.nextInt();                          // ID of a person which is adjacent to yi
             int yi = in.nextInt();                          // ID of a person which is adjacent to xi
             //debug(xi + " - " + yi);
-            Node<Integer> upper = getNode(xi, nodes);       // Get upper node from nodes array
+            Node<Integer> upper = nodesMap.get(xi);         // Get upper node from nodes map
             if (upper == null) {                            // Create and store new upper node if not found among nodes
                 upper = new Node<>(xi);
                 nodes.add(upper);
+                nodesMap.put(xi, upper);
             }
-            Node<Integer> lower = getNode(yi, nodes);       // Get lower node from nodes array
+            Node<Integer> lower = nodesMap.get(yi);         // Get lower node from nodes map
             if (lower == null) {                            // Create and store new lower node if not found among nodes
                 lower = new Node<>(yi);
                 lower.addParent(upper);                     // Add upper node as parent to lower node                
                 lower.setLevel(upper.getLevel() + 1);
                 nodes.add(lower);
+                nodesMap.put(yi, lower);
             } else {                                        // Found lower node among nodes
                 lower.addParent(upper);                     // Add upper node as parent to lower node
                 if (lower.getLevel() != (upper.getLevel() + 1)) {
-                    reLevelNode(lower, upper, nodes, upper.getLevel() + 1); // Re-level node's all children and other parents
+                    reLevelNode(lower, upper, nodesMap, upper.getLevel() + 1); // Re-level node's all children and other parents
                 }
             }
             upper.addChild(lower);                          // Add lower node as child to upper node
         }
+        // Set how deep we will dig as trying to find lowest spread count (steps)
         digLevel = Math.round(DIG_PERCENT * numLevels(nodes));
         //digLevel = n < 500 ? numLevels(nodes) : Math.round(DIG_PERCENT * numLevels(nodes));      
         // Display how many nodes have given amount of parents 
@@ -58,14 +62,13 @@ class Solution {
         debug("\ndetermining steps for all ids within digLevel...");
         // Determine then store steps needed spreading from current node
         for (Node<Integer> current : nodes) {
-            //Node<Integer> current = getNode(id, nodes);
             debug("check: " + current);
             if (current.hasChildren() &&                    // Speedup: don't determine steps for nodes without children
                 current.getLevel() <= digLevel) {           // and determine steps only for nodes standing below digLevel
                 //debug("starting markNeighbors");
-                markNeighbors(current, nodes);
+                markNeighbors(current, nodesMap);
                 //debug("markNeighbors finished, adding " + current.getId() + " to steps:");
-                steps.add(getSteps(current.getId(), nodes));
+                steps.add(getSteps(current.getId(), nodes, nodesMap));
                 debug("resetting mark flags");
                 // Reset mark flags of all nodes
                 for (Node<Integer> node : nodes) {
@@ -84,7 +87,7 @@ class Solution {
     }// main()
 
     // Re-level a node to the level given as argument, as well as all its children recursively
-    static <T> void reLevelNode(Node<T> node, Node<T> blocked, List<Node<T>> nodes, int level) {
+    static <T> void reLevelNode(Node<T> node, Node<T> blocked, Map<T, Node<T>> nodesMap, int level) {
         //disp("re-levelling " + node + "  to level " + level + " , upper is:" + upper.getId());
         node.setLevel(level);
         if (node.hasParents()) {
@@ -101,13 +104,14 @@ class Solution {
             Set<Node<T>> children = node.getChildren();
             for (Node<T> child : children) {
                 //disp(" -> ");
-                reLevelNode(getNode(child.getId(), nodes), blocked, nodes, node.getLevel() + 1);
+                //reLevelNode(getNode(child.getId(), nodes), blocked, nodes, node.getLevel() + 1);
+                reLevelNode(nodesMap.get(child.getId()), blocked, nodesMap, node.getLevel() + 1);
             }
         }
     }// reLevelNode()
 
     // Determine steps needed to propagate the whole ad from given start node
-    static <T> Integer getSteps(T id, List<Node<T>> nodes) {
+    static <T> Integer getSteps(T id, List<Node<T>> nodes, Map<T, Node<T>> nodesMap) {
         debug("starting getSteps with node " + id);
         List<Node<T>> markedNodes = new ArrayList<>();      // Collect marked nodes per iteration - Set<> would be faster?
         int step = 1;
@@ -119,7 +123,7 @@ class Solution {
             }
             // Mark neighbors of marked nodes (cannot be concatenated with for() cycle above)
             for (Node<T> marked : markedNodes) {
-                markNeighbors(marked, nodes);
+                markNeighbors(marked, nodesMap);
             }
             markedNodes.clear();
             step++;
@@ -135,24 +139,15 @@ class Solution {
 
     // Mark node and all its neighbors (parents and children)
     // Warning: existence of node NOT checked, but come from nodes array so it should exist
-    static <T> void markNeighbors(Node<T> node, List<Node<T>> nodes) {
+    static <T> void markNeighbors(Node<T> node, Map<T, Node<T>> nodesMap) {
         node.mark();                                        // Mark the node
         Set<Node<T>> neighbors = node.getChildren();        // Put all neighbors in a set
         neighbors.addAll(node.getParents());
         for (Node<T> neighbor : neighbors) {                // Mark node's parents and children
-            getNode(neighbor.getId(), nodes).mark();
+            nodesMap.get(neighbor.getId()).mark();
+            //getNode(neighbor.getId(), nodes).mark();
         }
     }// markNeighbors()
-
-    // Rerurn node if found in nodes array, otherwise null
-    static <T> Node<T> getNode(T id, List<Node<T>> nodes) {
-        for (Node<T> node : nodes) {
-            if (node.getId().equals(id)) {
-                return node;
-            }
-        }
-        return null;
-    }// getNode()
 
     // Return number of levels (numbering starts from 0)
     static <T> int numLevels(List<Node<T>> nodes) {

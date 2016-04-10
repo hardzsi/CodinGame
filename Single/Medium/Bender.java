@@ -3,18 +3,18 @@ import java.util.*;
 import java.awt.Point;
 
 class Solution {
-    static char[][] map;                            // Store symbols in map as chars
+    static char[][] map;                                                // Store symbols in map as chars
 
     public static void main(String args[]) {
         Scanner in = new Scanner(System.in);
-        int L = in.nextInt();                       // Number of lines/rows (y)
-        int C = in.nextInt();                       // Number of columns (x)
-        map = new char[C][L];                       // The map (x,y)
-        StringBuffer output = new StringBuffer();   // Output strings
-        System.err.println(C + "*" + L + " map");
+        int L = in.nextInt();                                           // Number of lines/rows (y)
+        int C = in.nextInt();                                           // Number of columns (x)
+        map = new char[C][L];                                           // The map (x,y)
+        StringBuffer output = new StringBuffer();                       // Result moves
+        debug(C + "*" + L + " map");
         in.nextLine();
-        Point start = null;                         // Start (x,y) coordinates
-        List<Point> teleports = new ArrayList<>();  // Contains (x,y) coordinates of teleport pair if appears on map
+        Robot bender = null;
+        List<Point> teleports = new ArrayList<>();                      // Coordinates of teleport pair if appears on map
         for (int y = 0; y < L; y++) {
             String row = in.nextLine();
             char[] rowArray = row.toCharArray();
@@ -23,97 +23,98 @@ class Solution {
             }
             for (int x = 0; x < C; ++x) {
                 switch (map[x][y]) {
-                    case '@': start = new Point(x, y); break;
+                    case '@': bender=new Robot(new Point(x, y)); break; // Creating Bender at start point
                     case 'T': teleports.add(new Point(x , y)); break;
                 }
             }
         }
         displayMap();
-        System.err.println("\nstart:" + start + "\n" + (teleports.size() == 0 ? "no teleports" : "teleports:"));
-        for (Point teleport : teleports) { System.err.println(teleport); }
-
-        Robot bender = new Robot(start);            // Alternative: Robot bender = new Robot(start, "EAST", true, true);
-     
-        System.err.println("\nposition:" + bender.getPos() + " direction:" + bender.getDir() +
-                " inverted:" + bender.isInverted() + ", breaker mode:" + bender.isBreakerMode());
-
+        debug(teleports.size() == 0 ? "no teleports" : "teleports:");
+        for (Point teleport : teleports) { debug(teleport); }
         // Logic
-        boolean moving = true;                                          // Bender moves until '$' or until identifies a loop
-        char ch, chAt;                                                  // Char @ current position and poisition in direction     
-        int maxSteps = (C - 2) * (L - 2);                               // Maximum number of steps Bender can take
+        boolean moving = true;                                          // Bender moves until '$' or a loop identified
+        char ch, chAt;                                                  // Char at current position & looking in direction
+        int steps = 0;                                                  // Count steps for loop identification
         do {
             boolean blocked = true;
-            ArrayList<String> dirPriority = bender.getDirPriority();
-            String direction = bender.getDir();
+            String direction = bender.getDir();                         // Get direction
             // Determine non-blocked direction
             boolean first = true;
             do {
+                // Get current position and apply modifiers first time
                 Point position = bender.getPos();
-                ch = map[(int)position.getX()][(int)position.getY()];   // Char @ current position
-                if (ch == 'E' || ch == 'W' || ch == 'N' || ch == 'S') { // Change position if we stand on a char E/W/N/S
+                ch = map[(int)position.getX()][(int)position.getY()];   // Char at current position
+                if (first) {
                     switch (ch) {
-                        case 'E':   direction = "EAST"; break;
-                        case 'W':   direction = "WEST"; break;
-                        case 'N':   direction = "NORTH"; break;
-                        case 'S':   direction = "SOUTH"; break;
+                        case 'E': direction = "EAST"; break;
+                        case 'W': direction = "WEST"; break;
+                        case 'N': direction = "NORTH"; break;
+                        case 'S': direction = "SOUTH"; break;
+                        case 'B': bender.switchBreakerMode();           // Found a beer: change breaker mode
+                                  debug("switched breaker mode"); break;
+                        case 'I': bender.invert(); break;               // Found an inverter
+                        case 'T': int index =                           // Found a teleport: move to the other teleport
+                                    teleports.indexOf(bender.getPos());
+                                  Point other = teleports.get(index == 0 ? 1 : 0);
+                                  debug("teleporting to " + other);
+                                  bender.setPos(other);
+                                  break;
                     }
                 }
-                if (ch == 'B') { bender.switchBreakerMode(); System.err.println("switched breaker mode"); }          // Found a beer: change breaker mode
-                if (ch == 'I') { bender.invert(); }                     // Found an inverter
-                if (ch == 'T') {                                        // Found a teleport: move to the other teleport
-                    int index = teleports.indexOf(bender.getPos());
-                    Point other = teleports.get(index == 0 ? 1 : 0);
-                    System.err.println("teleporting to " + other);
-                    bender.setPos(other);
-                }
-                chAt = charAt(bender.getPos(), direction);              // Char @ position found in direction from current
-                System.err.println("char in direction " + direction + ": '" + chAt + "'");
+                ArrayList<String> dirPriority = bender.getDirPriority();                
+                // Look char in direction and changes direction
+                // using current priorities if encounters an obstacle
+                chAt = charAt(bender.getPos(), direction);              // Char looking at direction
                 if (chAt == '#' || (chAt == 'X' && !bender.isBreakerMode())) {
-                    if (first) {
+                    if (first) {                                        // Set direction to 1st priority first time
                         direction = dirPriority.get(0);
                         first = false;
-                    } else {
+                    } else {                                            // Set direction to next priority
                         int index = dirPriority.indexOf(direction);
-                        direction = (index < dirPriority.size() - 1) ? dirPriority.get(index + 1) : dirPriority.get(0);                        
+                        direction = (index < dirPriority.size() - 1) ?
+                            dirPriority.get(index + 1) : dirPriority.get(0);                        
                     }
                 } else {
                     blocked = false;                
                 }
             } while (blocked);
             // Now Bender can move to direction from current position
-            System.err.println("\nposition:" + bender.getPos() + " direction:" + bender.getDir() +
-                " inverted:" + bender.isInverted() + ", breaker mode:" + bender.isBreakerMode());            
+            debug("\nposition:" + bender.getPos() + " direction:" +
+                  bender.getDir() + " inverted:" + bender.isInverted() +
+                  ", breaker mode:" + bender.isBreakerMode());            
+            bender.movePos(direction);
+            output.append(direction).append("\n");
             switch (chAt) {
-                case ' ': case 'E': case 'W': case 'N': case 'S': case 'B': case 'I': case 'T':
-                            bender.movePos(direction);
-                            output.append(direction).append("\n");
-                            System.err.println("char '" + chAt + "' , Bender moved to " + bender.getPos());
+                case ' ': case 'E': case 'W': case 'N':
+                case 'S': case 'B': case 'I': case 'T':
+                            debug("Bender moved to " + direction +
+                                " (char '" + chAt + "') " + bender.getPos());
                             break;
-                case 'X':   bender.movePos(direction);
-                            output.append(direction).append("\n");
-                            System.err.println("char '" + chAt + "' , Bender in breaker mode moved to " + bender.getPos());
-                            Point position = bender.getPos();
-                            map[(int)position.getX()][(int)position.getY()] = ' ';  // In breaker mode: destroy X                   
+                case 'X':   Point pos = bender.getPos();
+                            map[(int)pos.getX()][(int)pos.getY()]=' ';  // We are in breaker mode: destroy X
+                            debug("Bender in breaker mode moved to " +
+                                direction + " (char '" + chAt + "') " + bender.getPos());
                             break;
-                case '$':   bender.movePos(direction);
-                            output.append(direction);
-                            System.err.println("char '$', Bender moved to suicide booth: " + bender.getPos());
-                            moving = false;
-                            break;
-                default:    System.err.println("ERROR: found unexpected char '" + chAt + "'");
+                case '$':   moving = false;
+                            debug("Bender moved to " + direction +
+                                " (char '$') suicide booth: " + bender.getPos());
                             break;
             }
-            if (maxSteps-- == 0) {                              // Moved whole map w/o reaching booth, should be loop
+            if (++steps == 1000) {                                      // After such many steps it is considered a loop
                 output.setLength(0);
                 output.append("LOOP");
                 moving = false;
             }
         } while (moving);
-        System.err.println("\noutput:");
+        debug("\noutput:");
         System.out.println(output.toString());
     }// main()
 
-    // Returns the char in map at position found in direction of current position 
+    static void debug(Object obj) {
+        System.err.println(obj.toString());
+    }// debug()
+
+    // Return char looking at direction 
     static char charAt(Point position, String direction) {
         int x = (int)position.getX();
         int y = (int)position.getY();
@@ -140,12 +141,6 @@ class Solution {
 class Robot {
     // Constructors
     public Robot(Point pos) { this.pos = new Point(pos); }
-    public Robot(Point pos, String dir, boolean inv, boolean brk) { 
-        this.pos = new Point(pos);
-        this.dir = dir;
-        inverted = inv;
-        breaker = brk;
-    }
     // Getters
     public Point    getPos() { return pos; }
     public String   getDir() { return dir; }
@@ -170,10 +165,10 @@ class Robot {
     public void     invert() { inverted = !inverted; }
     public void     switchBreakerMode() { breaker = !breaker; }
 
-    private Point   pos;                // Position as (x,y)
-    private boolean inverted = false;   // Inverted direction priority
-    private boolean breaker = false;    // Breaker mode
-    private String  dir = "SOUTH";      // Direction
+    private Point   pos;                                        // Position as (x,y)
+    private boolean inverted = false;                           // Inverted direction priority
+    private boolean breaker = false;                            // Breaker mode
+    private String  dir = "SOUTH";                              // Direction
     private static ArrayList<String>
                     normPriority = new ArrayList<>(Arrays.asList("SOUTH", "EAST", "NORTH", "WEST"));
     private static ArrayList<String>

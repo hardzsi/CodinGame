@@ -3,8 +3,7 @@ import java.util.*;
 
 class Solution {
     static final boolean DEBUG = false;
-    static final float DIG_PERCENT = 0.5f;                  // Step amount will be determined only for those nodes
-                                                            // that is above digLevel (DIG_PERCENT * lowest level)
+
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
         int n = in.nextInt();                               // Number of adjacency relations
@@ -13,7 +12,7 @@ class Solution {
         List<Node<Integer>> nodes = new ArrayList<>();      // List of created nodes
         List<Integer>       steps = new ArrayList<>();      // Steps needed to propagate the whole ad starting at a node
         Map<Integer, Node<Integer>>
-                            nodesMap = new HashMap<>();     // Store nodes also in a map with id as key for quicker access
+                            nodesMap = new HashMap<>();     // Store nodes in a map with id as key for quicker access
         // Build graph storing adjacency relations in nodes
         for (int i = 0; i < n; i++) {
             int xi = in.nextInt();                          // ID of a person which is adjacent to yi
@@ -41,10 +40,10 @@ class Solution {
             upper.addChild(lower);                          // Add lower node as child to upper node
         }
         // Set how deep we will dig as trying to find lowest spread count (steps)
-        digLevel = Math.round(DIG_PERCENT * numLevels(nodes));
-        //digLevel = n < 500 ? numLevels(nodes) : Math.round(DIG_PERCENT * numLevels(nodes));      
+        digLevel = n > 10000 ? Math.round(0.15f * numLevels(nodes)) : Math.round(0.6f * numLevels(nodes));      
 
         disp("\n" + numLevels(nodes) + " levels, digLevel:" + digLevel + ", " + nodes.size() + " nodes in nodes array");
+        //debug("\nNodes:"); for (Node<Integer> node : nodes) { debug(node.toString()); }
 
         // Determine then store steps needed spreading from current node
         for (Node<Integer> current : nodes) {
@@ -57,11 +56,6 @@ class Solution {
             }
         }
         Collections.sort(steps);                            // Sort steps to get the minimum step amount (the first one)
-        // Display steps
-        /*debug("\ndetermined steps:");
-        for (Integer stp : steps) {
-            debug(stp.toString());
-        }*/
         disp("\noutput:");
         System.out.println(steps.get(0));                   //  Minimal amount of steps required to propagate the ad
     }// main()
@@ -168,22 +162,22 @@ class Node<T> {
     // other
     public T        getId() { return id; }    
     @Override 
-    public String   toString() {                            // Return 'node id (children:ids  parents:ids) | level:level'
+    public String   toString() {                            // Return "node id (children:ids  parents:ids) | level:level"
         StringBuffer pBuf = new StringBuffer("none");
         if (parents.size() > 0) {
             pBuf.setLength(0);
-            Object[] pArr = parents.toArray();
-            for (int i = 0; i < pArr.length; ++i) {
-                pBuf.append(((Node<T>)pArr[i]).getId()).append(i < parents.size() - 1? "," : "");
+            for (Node<T> parent : parents) {
+                pBuf.append(parent.getId()).append(",");
             }
+            pBuf.deleteCharAt(pBuf.length() - 1);
         }
         StringBuffer cBuf = new StringBuffer("none");
         if (children.size() > 0) {
             cBuf.setLength(0);
-            Object[] cArr = children.toArray();
-            for (int i = 0; i < cArr.length; ++i) {
-                cBuf.append(((Node<T>)cArr[i]).getId()).append(i < children.size() - 1? "," : "");
+            for (Node<T> child : children) {
+                cBuf.append(child.getId()).append(",");
             }
+            cBuf.deleteCharAt(cBuf.length() - 1);
         }
         return "node " + id + " (children:" + cBuf.toString() + "  parents:" + pBuf.toString() + ") | level:" + level;
     }// toString()

@@ -27,7 +27,7 @@ class Solution {
             Node<Integer> lower = nodesMap.get(yi);         // Get lower node from nodes map
             if (lower == null) {                            // Create and store new lower node if not found among nodes
                 lower = new Node<>(yi);
-                lower.addParent(upper);                     // Add upper node as parent to lower node                
+                lower.addParent(upper);                     // Add upper node as parent to lower node
                 lower.setLevel(upper.getLevel() + 1);
                 nodes.add(lower);
                 nodesMap.put(yi, lower);
@@ -40,7 +40,7 @@ class Solution {
             upper.addChild(lower);                          // Add lower node as child to upper node
         }
         // Set how deep we will dig as trying to find lowest spread count (steps)
-        digLevel = n > 10000 ? Math.round(0.15f * numLevels(nodes)) : Math.round(0.6f * numLevels(nodes));      
+        digLevel = n > 10000 ? Math.round(0.155f * numLevels(nodes)) : Math.round(0.5f * numLevels(nodes));
 
         disp("\n" + numLevels(nodes) + " levels, digLevel:" + digLevel + ", " + nodes.size() + " nodes in nodes array");
         //debug("\nNodes:"); for (Node<Integer> node : nodes) { debug(node.toString()); }
@@ -67,10 +67,10 @@ class Solution {
         Set<Node<T>> parents = node.getParents();           // Set is empty if node has NO parents
         for (Node<T> parent : parents) {
             if (!parent.equals(blocked) && (parent.getLevel() != node.getLevel() - 1)) {
-                reLevelNode(nodesMap.get(parent.getId()), blocked, nodesMap, node.getLevel() - 1);                
+                reLevelNode(nodesMap.get(parent.getId()), blocked, nodesMap, node.getLevel() - 1);
             }
         }
-        Set<Node<T>> children = node.getChildren();         // Set is empty if node has NO children 
+        Set<Node<T>> children = node.getChildren();         // Set is empty if node has NO children
         for (Node<T> child : children) {
             reLevelNode(nodesMap.get(child.getId()), blocked, nodesMap, node.getLevel() + 1);
         }
@@ -78,7 +78,7 @@ class Solution {
 
     // Determine steps needed to propagate the whole ad from given start node
     static <T> Integer getSteps(T id, List<Node<T>> nodes, Map<T, Node<T>> nodesMap) {
-        Set<Node<T>> markedNodes = new HashSet<>();         // Collect marked nodes per iteration  
+        Set<Node<T>> markedNodes = new HashSet<>();         // Collect marked nodes per iteration
         int step = 1;
         boolean allMarked;
         do {
@@ -102,7 +102,7 @@ class Solution {
     }// getSteps()
 
     // Mark node and all its neighbors (parents and children)
-    // Note: node existence NOT checked, but come from nodes array so it should exist
+    // Note: node come from nodes array so it should exist
     static <T> void markNeighbors(Node<T> node, Map<T, Node<T>> nodesMap) {
         node.mark();                                        // Mark the node
         Set<Node<T>> neighbors = node.getChildren();        // Put all neighbors in a set
@@ -134,19 +134,15 @@ class Node<T> {
 
     // parents
     public Set<Node<T>> getParents() { return parents; }
-    public void         addParent(Node<T> parent) {         // Add parent node if node wasn't among parents
-        if (!parents.contains(parent)) {
-            parents.add(parent);
-        }
+    public void         addParent(Node<T> parent) {         // Add parent node if it wasn't among parents (as it is set)
+        parents.add(parent);
     }
 
     // children
     public Set<Node<T>> getChildren() { return children; }
     public boolean      hasChildren() { return children.size() > 0; }   // True if node has at least one child
-    public void         addChild(Node<T> child) {           // Add child node if node wasn't among children
-        if (!children.contains(child)) {
-            children.add(child);
-        }
+    public void         addChild(Node<T> child) {           // Add child node if it wasn't among children
+        children.add(child);
     }
 
     // level
@@ -159,8 +155,8 @@ class Node<T> {
     public boolean  isMarked() { return marked; }           // Return true if marked flag is set
 
     // other
-    public T        getId() { return id; }    
-    @Override 
+    public T        getId() { return id; }
+    @Override
     public String   toString() {                            // Return "node id (children:ids  parents:ids) | level:level"
         StringBuffer pBuf = new StringBuffer("none");
         if (parents.size() > 0) {

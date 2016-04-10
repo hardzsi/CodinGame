@@ -78,7 +78,7 @@ class Solution {
 
     // Determine steps needed to propagate the whole ad from given start node
     static <T> Integer getSteps(T id, List<Node<T>> nodes, Map<T, Node<T>> nodesMap) {
-        List<Node<T>> markedNodes = new ArrayList<>();      // Collect marked nodes per iteration - Set<> would be faster?
+        Set<Node<T>> markedNodes = new HashSet<>();         // Collect marked nodes per iteration  
         int step = 1;
         boolean allMarked;
         do {
@@ -102,7 +102,7 @@ class Solution {
     }// getSteps()
 
     // Mark node and all its neighbors (parents and children)
-    // Warning: existence of node NOT checked, but come from nodes array so it should exist
+    // Note: node existence NOT checked, but come from nodes array so it should exist
     static <T> void markNeighbors(Node<T> node, Map<T, Node<T>> nodesMap) {
         node.mark();                                        // Mark the node
         Set<Node<T>> neighbors = node.getChildren();        // Put all neighbors in a set
@@ -127,14 +127,13 @@ class Solution {
 }// class Solution
 
 
-// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Node class >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// Generic node class with any number of parents and children, also id and marked flag
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Node class >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+// Generic node class with id, marked flag and any number of parents and children
 class Node<T> {
     public Node(T id) { this.id = id; }                     // Constructor
 
     // parents
     public Set<Node<T>> getParents() { return parents; }
-    public boolean      hasParents() { return parents.size() > 0; }
     public void         addParent(Node<T> parent) {         // Add parent node if node wasn't among parents
         if (!parents.contains(parent)) {
             parents.add(parent);

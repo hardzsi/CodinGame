@@ -1,4 +1,6 @@
-// Teads Sponsored Challenge
+// Teads Sponsored Challenge (2015.06.14) 100% tests pass but 90% upon submission (validator 9 fails)
+// Algorithm A: Graph built storing levels for all nodes. Determine then store steps needed spreading from current node
+// only for those nodes that has children & their level stand above digLevel. Sorting steps bring least step-number first.
 import java.util.*;
 
 class Solution {
@@ -40,11 +42,20 @@ class Solution {
             upper.addChild(lower);                          // Add lower node as child to upper node
         }
         // Set how deep we will dig as trying to find lowest spread count (steps)
-        digLevel = n > 10000 ? Math.round(0.155f * numLevels(nodes)) : Math.round(0.5f * numLevels(nodes));
+        digLevel = n > 10000 ? Math.round(0.1f * numLevels(nodes)) : Math.round(0.5f * numLevels(nodes));
 
         disp("\n" + numLevels(nodes) + " levels, digLevel:" + digLevel + ", " + nodes.size() + " nodes in nodes array");
         //debug("\nNodes:"); for (Node<Integer> node : nodes) { debug(node.toString()); }
 
+        // Sorting nodes according to level
+        /*debug("\nbefore sorting:"); for (Node<Integer> node : nodes) { disp(node.toString()); }
+        Collections.sort(nodes, new Comparator<Node<Integer>>() {
+            public int compare(Node<Integer> node1, Node<Integer> node2) {
+                return node1.getLevel() - node2.getLevel();
+            }
+        });
+        debug("\nafter sorting:"); for (Node<Integer> node : nodes) { disp(node.toString()); }*/
+        
         // Determine then store steps needed spreading from current node
         for (Node<Integer> current : nodes) {
             if (current.hasChildren() &&                    // Speedup: don't determine steps for nodes without children

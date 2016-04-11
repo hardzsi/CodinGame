@@ -6,7 +6,7 @@ class Solution {
         Scanner in = new Scanner(System.in);
         int L = in.nextInt();                               // Width of numeral
         int H = in.nextInt();                               // Height of numeral
-        int op1 = 0, op2 = 0, result = 0;                   // Value of both operands and the result
+        long op1 = 0, op2 = 0, result = 0;                  // Value of both operands and the result
         String[] line = new String[H];                      // ASCII representation of 20 numerals - by lines
         List<Numeral> numerals = new ArrayList<>();         // List of 20 available numerals
         List<Numeral> op1numerals = new ArrayList<>();      // Numerals of 1st operand
@@ -77,15 +77,26 @@ class Solution {
 
         debug("\nresult = " + op1 + " " + operation + " " + op2 + " = " + result);
         
+        // Determine maximum power
+        int i = 0;
+        while (result > (long)Math.pow(20, i)) { ++i; }
+        --i;
+        // Determine and add numerals to output
         StringBuffer output = new StringBuffer();
-        if (result < 20) {
-            String[] res = numerals.get(result).getSymbol();
+        long value = result;
+        do {
+            long numeral = 0;
+            long base = (long)(Math.pow(20, i));
+            while (value >= base) { value -= base; ++numeral; }
+            debug("numeral:" + numeral + ", i:" + i);
+            String[] res = numerals.get((int)numeral).getSymbol();
             for (String str : res) {
                 output.append(str).append("\n");
             }
-        } else {
-            output.append("more than 19!");
-        }
+            --i;
+        } while (i > -1);
+
+        debug("\noutput:");
         System.out.println(output.toString());
     }// main()
     
@@ -110,29 +121,17 @@ class Numeral {
         this.symbol = symbol;
         this.value = value;
     }
-    public Numeral(String[] symbol) {
-        this.symbol = symbol;
-    }
     public String[] getSymbol() { return symbol; }
     public int getValue() { return value; }
-    public void setValue(int value) { this.value = value; }
-    @Override
+    /*@Override
     public String toString() {
         StringBuffer result = new StringBuffer("value:" + value);
         for (int i = 0; i < symbol.length; ++i) {
             result.append("\n").append(symbol[i]);
         }
         return result.toString();
-    }
-    @Override
-    public boolean equals(Object other) {
-		if (!(other instanceof Numeral) || other == null) {
-			return false;
-		} else {
-			return (symbol.equals(((Numeral)other).getSymbol()));// Equals if have same symbol (value can differ)
-		} 
-    }
-    
+    }*/
+
     private String[] symbol;
     private int value = -1;
 }// class Numeral

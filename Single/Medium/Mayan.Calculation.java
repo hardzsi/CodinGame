@@ -24,9 +24,7 @@ class Solution {
                 symbol[i] = line[i].substring(pos, pos + L);
             }
             numerals.add(new Numeral(symbol, value));
-        }
-        // Display list of numerals
-        //for (Numeral numeral : numerals) { debug(numeral.toString()); }      
+        }    
         
         // <<< First operand >>>
         int S1 = in.nextInt();
@@ -45,7 +43,6 @@ class Solution {
         for (int i = 0; i < op1numerals.size(); ++i) {
             op1 += op1numerals.get(i).getValue() * Math.pow(20, op1numerals.size() - 1 - i);
         }
-        debug("op1 = " + op1);
 
         // <<< Second operand >>>
         int S2 = in.nextInt();
@@ -64,7 +61,6 @@ class Solution {
         for (int i = 0; i < op2numerals.size(); ++i) {
             op2 += op2numerals.get(i).getValue() * Math.pow(20, op2numerals.size() - 1 - i);
         }
-        debug("op2 = " + op2);
 
         // Determine result based on given operation
         String operation = in.next();
@@ -77,10 +73,12 @@ class Solution {
 
         debug("\nresult = " + op1 + " " + operation + " " + op2 + " = " + result);
         
-        // Determine maximum power
-        int i = 0;
-        while (result > (long)Math.pow(20, i)) { ++i; }
-        --i;
+        // Determine the maximum power to raise
+        int i = 0;        
+        if (result != 0) {
+            while (result > (long)Math.pow(20, i)) { ++i; }
+            --i;        
+        }
         // Determine and add numerals to output
         StringBuffer output = new StringBuffer();
         long value = result;
@@ -88,7 +86,6 @@ class Solution {
             long numeral = 0;
             long base = (long)(Math.pow(20, i));
             while (value >= base) { value -= base; ++numeral; }
-            debug("numeral:" + numeral + ", i:" + i);
             String[] res = numerals.get((int)numeral).getSymbol();
             for (String str : res) {
                 output.append(str).append("\n");
@@ -123,14 +120,6 @@ class Numeral {
     }
     public String[] getSymbol() { return symbol; }
     public int getValue() { return value; }
-    /*@Override
-    public String toString() {
-        StringBuffer result = new StringBuffer("value:" + value);
-        for (int i = 0; i < symbol.length; ++i) {
-            result.append("\n").append(symbol[i]);
-        }
-        return result.toString();
-    }*/
 
     private String[] symbol;
     private int value = -1;

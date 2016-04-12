@@ -1,44 +1,73 @@
-// Winamax Sponsored Challenge 2015.12.09
+// Winamax Sponsored Challenge
 import java.util.*;
 
 class Solution {
     public static void main(String args[]) {
-        List<Card> p1hand = new ArrayList<>();
-        List<Card> p2hand = new ArrayList<>();
+        LinkedList<Card> p1hand = new LinkedList<>();
+        LinkedList<Card> p2hand = new LinkedList<>();
         
         Scanner in = new Scanner(System.in);
-        int n = in.nextInt();                   // Number of cards for player 1
+        int n = in.nextInt();                               // Number of cards for player 1
         for (int i = 0; i < n; i++) {
-            String cardp1 = in.next();          // The n cards of player 1
+            String cardp1 = in.next();                      // The n cards of player 1
             int len = cardp1.length() - 1;
-            //debug(i + ".cardp1:" + cardp1 + " (" + cardp1.substring(0, len) + "," + cardp1.substring(len) + ")");
             p1hand.add(new Card(cardp1.substring(0, len), cardp1.substring(len)));
         }
-        debug("");
-        int m = in.nextInt();                   // Number of cards for player 2
+        int m = in.nextInt();                               // Number of cards for player 2
         for (int i = 0; i < m; i++) {
-            String cardp2 = in.next();          // The m cards of player 2
+            String cardp2 = in.next();                      // The m cards of player 2
             int len = cardp2.length() - 1;
-            //debug(i + ".cardp2:" + cardp2 + " (" + cardp2.substring(0, len) + "," + cardp2.substring(len) + ")");
             p2hand.add(new Card(cardp2.substring(0, len), cardp2.substring(len)));
         }
-        debug("\np1hand:"); for (Card card : p1hand) { debug (card.toString()); }
-        debug("\np2hand:"); for (Card card : p2hand) { debug (card.toString()); }
-        /*debug("\ncompare p1 cards:");
-        for (int i = 0; i < p1hand.size() - 1; ++i) {
-            int comp = p1hand.get(i).compareTo(p1hand.get(i + 1));
-            boolean eq = p1hand.get(i).equals(p1hand.get(i + 1));
-            debug(p1hand.get(i) + " compared to " + p1hand.get(i + 1) + ": " + comp + " (equals:" + eq + ")");
-        }*/
-        //debug("\ncompare p2 cards:"); for (int i = 0; i < p2hand.size() - 1; ++i) { debug(p2hand.get(i) + " compared to " + p2hand.get(i + 1) + ": " + p2hand.get(i).compareTo(p2hand.get(i + 1))); }
+        debug("p1hand", p1hand);
+        debug("p2hand", p2hand);
  
+        int round = 0;
+        boolean pat = false;
+        Card card1, card2;
+        LinkedList<Card> p1stack = new LinkedList<>();
+        LinkedList<Card> p2stack = new LinkedList<>();
+        
+        while (p1hand.size() != 0 && p2hand.size() != 0) {  // Game
+            card1 = p1hand.pop();                           // Move 1-1 card to each stack
+            p1stack.add(card1);
+            card2 = p2hand.pop();
+            p2stack.add(card2);
+            while (card1.equals(card2)) {                   // War
+                if (p1hand.size() < 4 || p2hand.size() < 4) {
+                    pat = true;                             // We have PAT
+                    break;
+                }
+                for (int i = 0; i < 4; ++i) {               // Move 4-4 cards to each stack
+                    card1 = p1hand.pop();
+                    p1stack.add(card1);
+                    card2 = p2hand.pop();
+                    p2stack.add(card2);
+                }
+            }
+            if (pat) { break; }                             // Let the game end
+            p1stack.addAll(p2stack);
+            if (card1.value() > card2.value()) {
+                p1hand.addAll(p1stack);
+            } else {
+                p2hand.addAll(p1stack);
+            }
+            p1stack.clear();
+            p2stack.clear();
+            round++;
+        }
         debug("\noutput:");
-        //for (Rank rank : Rank.values()) { debug(String.format("%-5s (id:%2s value:%2d)", rank, rank.id(), rank.value())); }
-        //for (Suit suit : Suit.values()) { debug (suit + " (" + suit.id() + ")"); }
-        System.out.println("PAT");              // If both first "PAT", otherwise "n r" where n:player (1 or 2), r:rounds
-    } // main()
-    
+        String winner = p2hand.size() == 0 ? "1 " : "2 ";
+        System.out.println(pat ? "PAT" : winner + round);   // If both first "PAT", otherwise "n r" where n:player (1 or 2), r:rounds
+    }
+
     public static void debug(String s) { System.err.println(s); }
+
+    public static void debug(String s, LinkedList<Card> cards) {
+        StringBuffer result = new StringBuffer(s + ": ");
+        for (Card card : cards) { result.append(card.toString()).append(", "); }
+        System.err.println(result.toString());
+    }
 } // class Solution
 
 class Card implements Comparable<Card> {

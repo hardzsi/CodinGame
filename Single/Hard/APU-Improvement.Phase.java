@@ -48,33 +48,42 @@ class Player {
         //System.out.println("2 0 2 2 1");
     }// main()
 
-    // Fill links list recursively from first provided node point
-    static void getLinks(Point p) {
-        ArrayList<Point> connectingNodes = getConnectingNodes(p);
-        for (Point cp : connectingNodes) {
-            if (addNewLink(new Link(p, cp))) { getLinks(cp); }
+    // Fill links list recursively from first provided node
+    static void getLinks(Node n) {
+        ArrayList<Node> connectingNodes = getConnectingNodes(n);
+        for (Node cn : connectingNodes) {
+            if (addNewLink(new Link(n, cn))) { getLinks(cn); }
         }
     }// getLinks()
+
+    // Return node from nodes list that has same coordinates
+    // as the provided ones. Return null if not found
+    static Node getNode(int x, int y) {
+        for (Node node : nodes) {
+            if (node.getX() == x && node.getY() == y) return node;
+        }
+        return null;
+    } // getNode()
     
-    // Return top leftmost node in grid or null if grid empty
-    static Point getFirstNode() {
+    // Return top leftmost node or null if not found in nodes list
+    static Node getFirstNode() {
         for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                if (grid[x][y] != 0) return new Point(x, y);
+            for (int x = 0; x < width; ++x) {            
+                if (grid[x][y] != 0) return getNode(x, y);
             }
         }
         return null;
     }// getFirstNode()
     
     // Return list of nodes that may link to provided node
-    static ArrayList<Point> getConnectingNodes(Point p) {
-        int xNode = p.getX();
-        int yNode = p.getY();
-        ArrayList<Point> list = new ArrayList<>();
+    static ArrayList<Node> getConnectingNodes(Node n) {
+        int xNode = n.getX();
+        int yNode = n.getY();
+        ArrayList<Node> list = new ArrayList<>();
         if (xNode > 0) {                            // Check left link
             for (int x = xNode - 1; x > 0; --x) {
                 if (grid[x][yNode] != 0) {
-                    list.add(new Point(x, yNode));
+                    list.add(getNode(x, yNode));
                     break;
                 }
             }
@@ -82,7 +91,7 @@ class Player {
         if (xNode < width - 1) {                    // Check right link
             for (int x = xNode + 1; x < width; ++x) {
                 if (grid[x][yNode] != 0) {
-                    list.add(new Point(x, yNode));
+                    list.add(getNode(x, yNode));
                     break;
                 }
             }
@@ -90,7 +99,7 @@ class Player {
         if (yNode > 0) {                            // Check up link
             for (int y = yNode - 1; y > 0; --y) {
                 if (grid[xNode][y] != 0) {
-                    list.add(new Point(xNode, y));
+                    list.add(getNode(xNode, y));
                     break;
                 }
             }
@@ -98,7 +107,7 @@ class Player {
         if (yNode < height - 1) {                   // Check down link
             for (int y = yNode + 1; y < height; ++y) {
                 if (grid[xNode][y] != 0) {
-                    list.add(new Point(xNode, y));
+                    list.add(getNode(xNode, y));
                     break;
                 }
             }
@@ -107,7 +116,7 @@ class Player {
     }// getConnectingNodes()
     
     // Add link to links list if not was already included
-    // Returns true if a link was added, flase otherwise
+    // Returns true if a link was added, false otherwise
     static boolean addNewLink(Link newLink) {
         boolean found = false;
         for (Link link : links) {
@@ -135,29 +144,8 @@ class Player {
     }// displayGrid()
 }
 
-// Simple Point class with integer coordinate values
-// Note: java.awt.Point uses double coordinate values
-class Point {
-    public Point(int x, int y) { this.x = x; this.y = y; }
-    
-    @Override public boolean equals(Object other) {
-        if (other == null) { return false; }
-        int otherX = ((Point)other).getX();
-        int otherY = ((Point)other).getY();
-        if (x == otherX && y == otherY) { return true; }
-        return false;
-    }
-    
-    @Override public String toString() { return x + "," + y; }
-    
-    public int getX() { return x; }
-    public int getY() { return y; }
-
-    private int x;
-    private int y;
-} // class Point
-
 // Node class with coordinates and aimed number of connections
+// Two nodes considered equal if their coordinates are the same
 class Node {
     public Node(int x, int y, int aC) {
         this.x = x; this.y = y;
@@ -168,12 +156,13 @@ class Node {
         if (other == null) { return false; }
         int otherX = ((Node)other).getX();
         int otherY = ((Node)other).getY();
-        int otherAC = ((Node)other).getAimedConnections();
-        if (x == otherX && y == otherY && aimedConnections == otherAC) { return true; }
+        if (x == otherX && y == otherY) { return true; }        
+        //int otherAC = ((Node)other).getAimedConnections();
+        //if (x == otherX && y == otherY && aimedConnections == otherAC) { return true; }
         return false;
     }
     
-    @Override public String toString() { return x + "," + y + " | aimed connections: " + aimedConnections; }
+    @Override public String toString() { return x + "," + y + " [ac:" + aimedConnections + "]"; }
     
     public int getX() { return x; }
     public int getY() { return y; }
@@ -188,10 +177,10 @@ class Node {
 // Note: comparision based _only_ on number of connections
 // Two links considered equal _even if_ their nodes are switched
 class Link implements Comparable<Link> {
-    Link(Point a, Point b) { nodeA = a; nodeB = b; connection = 0; }
+    Link(Node a, Node b) { nodeA = a; nodeB = b; connection = 0; }
 
     public int getConnection() { return connection; }
-    public Point[] getNodes() { return new Point[] { nodeA, nodeB }; }
+    public Node[] getNodes() { return new Node[] { nodeA, nodeB }; }
     public void setConnection(int c) { connection = c; }
     public String getAsString() {
         return "" + nodeA.getX() + " " + nodeA.getY() + " " +
@@ -204,19 +193,19 @@ class Link implements Comparable<Link> {
 
     @Override public boolean equals(Object other) {
         if (other == null) { return false; }
-        Point[] nodes = ((Link)other).getNodes();
-        if (((nodeA.equals(nodes[0]) && nodeB.equals(nodes[1]))  ||
-             (nodeA.equals(nodes[1]) && nodeB.equals(nodes[0]))) &&
+        Node[] node = ((Link)other).getNodes();
+        if (((nodeA.equals(node[0]) && nodeB.equals(node[1]))  ||
+             (nodeA.equals(node[1]) && nodeB.equals(node[0]))) &&
              connection == ((Link)other).getConnection()) { return true; }
         return false;
     }
 
     @Override public String toString() { 
-        return "link (" + nodeA + " " +
-            (connection == 0 ? "x" : connection == 1 ? "-" : "=") + " " + nodeB + ")";
+        return "link " + nodeA + " " +
+            (connection == 0 ? "x" : connection == 1 ? "-" : "=") + " " + nodeB;
     }
 
-    private Point nodeA;
-    private Point nodeB;
+    private Node nodeA;
+    private Node nodeB;
     private int connection;
 }// class Link

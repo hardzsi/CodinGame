@@ -1,61 +1,196 @@
 // APU:Improvement Phase
 import java.util.*;
-import java.awt.Point;
 
 class Player {
+    static int[][] grid;                                // X,Y grid containing amount of links between 
+                                                        // neighbouring nodes (1-8) or 0 if no node
+    static int width, height;                           // Number of grid cells on X and Y axis
+    static ArrayList<Link> links = new ArrayList<>();   // Links of neighboring nodes with no/single/double
+                                                        // connection between them
     public static void main(String args[]) {
         Scanner in = new Scanner(System.in);
-        int width = in.nextInt();                   // Number of cells on X axis
+        width = in.nextInt();
         in.nextLine();
-        int height = in.nextInt();                  // Number of cells on Y axis
+        height = in.nextInt();
         in.nextLine();
         debug("width: " + width + ", height:" + height);
-        ArrayList<Node> nodes = new ArrayList<>();  // List of all nodes
-        for (int y = 0; y < height; ++y) {
-            String line = in.nextLine();            // Width chars, each a number 1-8 or '.'
-            debug(line);
+        grid = new int[width][height];
+        for (int y = 0; y < height; ++y) {              // Filling the grid
+            String line = in.nextLine();                // Width number of chars, each: 1-8 or '.'
             for (int x = 0; x < line.length(); ++x) {
-                char ch = line.charAt(x);
-                if (ch != '.') {
-                    int maxLinks = 8;            // Determine maximum possible number of links
-                    if (x == 0 || x == line.length() - 1)   maxLinks -= 2;
-                    if (y == 0 || y == height - 1)          maxLinks -= 2;
-                    Node node = new Node(new Point(x, y), Character.getNumericValue(ch), maxLinks);
-                    nodes.add(node);
+                grid[x][y] = line.charAt(x) == '.'?
+                    0 : Character.getNumericValue(line.charAt(x));
+            }
+        }
+        displayGrid();
+        getLinks(getFirstNode());                   // Filling the links list
+        debug("\nlinks:");
+        for (Link link : links) {                   // Display links
+            //debug (link.toString());
+            System.out.println(link.getAsString() + " 1");
+        }
+        
+        debug("output:");
+        //System.out.println("0 0 2 0 1");          // Two coords and an int: a node, one of its neighbors, number of links connecting them
+        //System.out.println("2 0 2 2 1");
+    }// main()
+
+    // Fill links list recursively from first provided node point
+    static void getLinks(Point p) {
+        ArrayList<Point> connectingNodes = getConnectingNodes(p);
+        for (Point cp : connectingNodes) {
+            if (addNewLink(new Link(p, cp))) { getLinks(cp); }
+        }
+    }// getLinks()
+    
+    // Return top leftmost node in grid or null if grid empty
+    static Point getFirstNode() {
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                if (grid[x][y] != 0) return new Point(x, y);
+            }
+        }
+        return null;
+    }// getFirstNode()
+    
+    // Return list of nodes that may link to provided node
+    static ArrayList<Point> getConnectingNodes(Point p) {
+        int xNode = p.getX();
+        int yNode = p.getY();
+        ArrayList<Point> list = new ArrayList<>();
+        if (xNode > 0) {                            // Check left link
+            for (int x = xNode - 1; x > 0; --x) {
+                if (grid[x][yNode] != 0) {
+                    list.add(new Point(x, yNode));
+                    break;
                 }
             }
         }
-        for (Node node : nodes) debug(node.toString());
-        
-        debug("output:");
-        switch(nodes.size()) {
-            case 2: System.out.println(nodes.get(0).getCoordStr() + " " + nodes.get(1).getCoordStr() + " " + nodes.get(0).getTargetValue()); break;
-            case 3: System.out.println(nodes.get(0).getCoordStr() + " " + nodes.get(1).getCoordStr() + " " + nodes.get(0).getTargetValue());
-                    System.out.println(nodes.get(1).getCoordStr() + " " + nodes.get(2).getCoordStr() + " " + nodes.get(2).getTargetValue()); break;
-            default:System.out.println("no idea"); break;
+        if (xNode < width - 1) {                    // Check right link
+            for (int x = xNode + 1; x < width; ++x) {
+                if (grid[x][yNode] != 0) {
+                    list.add(new Point(x, yNode));
+                    break;
+                }
+            }
         }
-        
-        //System.out.println("0 0 2 0 1");            // Two coords and an int: a node, one of its neighbors, number of links connecting them
-        //System.out.println("2 0 2 2 1");
-    }// main()
+        if (yNode > 0) {                            // Check up link
+            for (int y = yNode - 1; y > 0; --y) {
+                if (grid[xNode][y] != 0) {
+                    list.add(new Point(xNode, y));
+                    break;
+                }
+            }
+        }
+        if (yNode < height - 1) {                   // Check down link
+            for (int y = yNode + 1; y < height; ++y) {
+                if (grid[xNode][y] != 0) {
+                    list.add(new Point(xNode, y));
+                    break;
+                }
+            }
+        }
+        return list;
+    }// getConnectingNodes()
     
-    static void debug(String str) {
-        System.err.println(str);
-    }
+    // Add linkage to linkage list if it's not already included
+    // Returns true if linkage was added
+    static boolean addNewLink(Link newLink) {
+        boolean found = false;
+        for (Link link : links) {
+            if (link.equals(newLink)) {
+                found = true;
+                //debug("two equal links found: " + link + " | AND | " + newLink);
+                break;
+            }
+        }
+        if (!found) { 
+            links.add(newLink);
+            //debug("new link added: " + newLink);
+        }
+        return !found;
+    }// addNewLink()
+    
+    static void debug(String str) { System.err.println(str); }
+
+    static void displayGrid() {
+        for (int y = 0; y < grid[0].length; ++y) {
+            String line = "";
+            for (int x = 0; x < grid.length; ++x) {
+                line += grid[x][y];
+            }
+            debug(line);
+        }
+    }// displayGrid()
 }
 
-class Link {
-    Link(Node node1, Node node2, int count) {
-        
+// Simple Point class with integer coordinate values
+// Note: java.awt.Point uses double coordinate values
+class Point {
+    public Point(int x, int y) { this.x = x; this.y = y; }
+    
+    @Override public boolean equals(Object other) {
+        if (other == null) { return false; }
+        int otherX = ((Point)other).getX();
+        int otherY = ((Point)other).getY();
+        if (x == otherX && y == otherY) { return true; }
+        return false;
     }
+    
+    @Override public String toString() { return x + "," + y; }
+    
+    public int getX() { return x; }
+    public int getY() { return y; }
+
+    private int x;
+    private int y;
+} // class Point
+
+// Pair of connecting nodes with at most two connections
+// Comparision based only on number of connections
+// Two link considered equal even if their nodes are switched  
+class Link implements Comparable<Link> {
+    Link(Point a, Point b) { nodeA = a; nodeB = b; connection = 0; }
+
+    public int getConnection() { return connection; }
+    public Point[] getNodes() { return new Point[] { nodeA, nodeB }; }
+    public void setConnection(int c) { connection = c; }
+    public String getAsString() {
+        return "" + nodeA.getX() + " " + nodeA.getY() + " " +
+                    nodeB.getX() + " " + nodeB.getY();
+    }
+
+    @Override public int compareTo(Link other) {
+        return connection - other.getConnection();
+    }
+
+    @Override public boolean equals(Object other) {
+        //System.err.println("equality checked for: " + this + " | AND | " + (Link)other);
+        if (other == null) { return false; }
+        Point[] nodes = ((Link)other).getNodes();
+        if (((nodeA.equals(nodes[0]) && nodeB.equals(nodes[1]))  ||
+             (nodeA.equals(nodes[1]) && nodeB.equals(nodes[0]))) &&
+             connection == ((Link)other).getConnection()) { return true; }
+        return false;
+    }
+
+    @Override public String toString() { 
+        return "link (" + nodeA + " " +
+            (connection == 0 ? "x" : connection == 1 ? "-" : "=") + " " + nodeB + ")";
+    }
+
+    private Point nodeA;
+    private Point nodeB;
+    private int connection;
 }// class Link
 
-class Node {
+/*class Node {
     Node(Point p, int tVal, int maxLinks) {
         coord = p;
         targetValue = tVal;
         maxLinkCount = maxLinks;
     }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
     @Override
     public String toString() {
         return "Node [" + (int)coord.getX() + "," + (int)coord.getY() + "] value:" +
@@ -69,11 +204,11 @@ class Node {
     public int getValue() { return value; }
     public int getTargetValue() { return targetValue; }
     public int getLinkCount() { return links.size(); }
-    public ArrayList<Link> getLinks() { return links; }  
+    public ArrayList<Link> getConnections() { return links; }  
     
     private Point coord;
     private int value = 0;   
     private int targetValue;
     private ArrayList<Link> links = new ArrayList<>();    
     private int maxLinkCount;
-}// class Node
+}// class Node*/

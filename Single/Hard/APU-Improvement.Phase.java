@@ -7,6 +7,7 @@ class Player {
     static int width, height;                           // Number of grid cells on X and Y axis
     static ArrayList<Link> links = new ArrayList<>();   // Links of neighboring nodes with no/single/double
                                                         // connection between them
+    static ArrayList<Node> nodes = new ArrayList<>();   // List of all nodes
     public static void main(String args[]) {
         Scanner in = new Scanner(System.in);
         width = in.nextInt();
@@ -18,19 +19,31 @@ class Player {
         for (int y = 0; y < height; ++y) {              // Filling the grid
             String line = in.nextLine();                // Width number of chars, each: 1-8 or '.'
             for (int x = 0; x < line.length(); ++x) {
-                grid[x][y] = line.charAt(x) == '.'?
-                    0 : Character.getNumericValue(line.charAt(x));
+                if (line.charAt(x) == '.') {            // No node
+                    grid[x][y] = 0;
+                } else {                                // Add node to grid and nodes list
+                    int aimedConnections = Character.
+                        getNumericValue(line.charAt(x));
+                    grid[x][y] = aimedConnections;
+                    nodes.add(new Node(x, y, aimedConnections));
+                }
             }
         }
         displayGrid();
         getLinks(getFirstNode());                   // Filling the links list
+
+        debug("\nnodes:");
+        for (Node node : nodes) {
+            debug(node.toString());
+        }
+
         debug("\nlinks:");
         for (Link link : links) {                   // Display links
-            //debug (link.toString());
+            debug (link.toString());
             System.out.println(link.getAsString() + " 1");
         }
         
-        debug("output:");
+        debug("\noutput:");
         //System.out.println("0 0 2 0 1");          // Two coords and an int: a node, one of its neighbors, number of links connecting them
         //System.out.println("2 0 2 2 1");
     }// main()
@@ -93,20 +106,18 @@ class Player {
         return list;
     }// getConnectingNodes()
     
-    // Add linkage to linkage list if it's not already included
-    // Returns true if linkage was added
+    // Add link to links list if not was already included
+    // Returns true if a link was added, flase otherwise
     static boolean addNewLink(Link newLink) {
         boolean found = false;
         for (Link link : links) {
             if (link.equals(newLink)) {
                 found = true;
-                //debug("two equal links found: " + link + " | AND | " + newLink);
                 break;
             }
         }
         if (!found) { 
             links.add(newLink);
-            //debug("new link added: " + newLink);
         }
         return !found;
     }// addNewLink()
@@ -146,9 +157,36 @@ class Point {
     private int y;
 } // class Point
 
+// Node class with coordinates and aimed number of connections
+class Node {
+    public Node(int x, int y, int aC) {
+        this.x = x; this.y = y;
+        aimedConnections = aC;
+    }
+    
+    @Override public boolean equals(Object other) {
+        if (other == null) { return false; }
+        int otherX = ((Node)other).getX();
+        int otherY = ((Node)other).getY();
+        int otherAC = ((Node)other).getAimedConnections();
+        if (x == otherX && y == otherY && aimedConnections == otherAC) { return true; }
+        return false;
+    }
+    
+    @Override public String toString() { return x + "," + y + " | aimed connections: " + aimedConnections; }
+    
+    public int getX() { return x; }
+    public int getY() { return y; }
+    public int getAimedConnections() { return aimedConnections; }
+
+    private int x;
+    private int y;
+    private int aimedConnections;
+} // class Node
+
 // Pair of connecting nodes with at most two connections
-// Comparision based only on number of connections
-// Two link considered equal even if their nodes are switched  
+// Note: comparision based _only_ on number of connections
+// Two links considered equal _even if_ their nodes are switched
 class Link implements Comparable<Link> {
     Link(Point a, Point b) { nodeA = a; nodeB = b; connection = 0; }
 
@@ -165,7 +203,6 @@ class Link implements Comparable<Link> {
     }
 
     @Override public boolean equals(Object other) {
-        //System.err.println("equality checked for: " + this + " | AND | " + (Link)other);
         if (other == null) { return false; }
         Point[] nodes = ((Link)other).getNodes();
         if (((nodeA.equals(nodes[0]) && nodeB.equals(nodes[1]))  ||
@@ -183,32 +220,3 @@ class Link implements Comparable<Link> {
     private Point nodeB;
     private int connection;
 }// class Link
-
-/*class Node {
-    Node(Point p, int tVal, int maxLinks) {
-        coord = p;
-        targetValue = tVal;
-        maxLinkCount = maxLinks;
-    }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
-    @Override
-    public String toString() {
-        return "Node [" + (int)coord.getX() + "," + (int)coord.getY() + "] value:" +
-        value + ", target value:" + targetValue + ", links:" +
-        links.size() + ", max. number of links:" + maxLinkCount;
-    }
-    
-    // Getters
-    public Point getCoord() { return coord; }
-    public String getCoordStr() { return "" + (int)coord.getX() + " " + (int)coord.getY(); }
-    public int getValue() { return value; }
-    public int getTargetValue() { return targetValue; }
-    public int getLinkCount() { return links.size(); }
-    public ArrayList<Link> getConnections() { return links; }  
-    
-    private Point coord;
-    private int value = 0;   
-    private int targetValue;
-    private ArrayList<Link> links = new ArrayList<>();    
-    private int maxLinkCount;
-}// class Node*/

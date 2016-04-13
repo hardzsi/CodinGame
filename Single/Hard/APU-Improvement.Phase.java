@@ -1,4 +1,4 @@
-// APU:Improvement Phase
+// APU:Improvement Phase 0919d
 import java.util.*;
 
 class Player {
@@ -13,7 +13,7 @@ class Player {
         in.nextLine();
         height = in.nextInt();
         in.nextLine();
-        debug("grid:" + width + "x" + height);
+        //debug("grid:" + width + "x" + height);
         for (int y = 0; y < height; ++y) {                  // Filling the grid
             String line = in.nextLine();                    // Width number of chars, each: 1-8  or '.':
                                                             // node with aimed number of links or no node
@@ -26,7 +26,7 @@ class Player {
         }
 
         displayGrid(1);                                     // Display grid of nodes with aimed & actual number of links
-        displayGrid(0);
+        //displayGrid(0);
         getRelations(nodes.get(0));                         // Fill relations list
         for (Node node : nodes) {                           // Set nodes' neighbors
             node.setNeighbors(countNeighbors(node));
@@ -36,16 +36,17 @@ class Player {
         //debug("\nrelations with a single neighbor:",
         //    getAdjacentRelations(1, relations));
 
-        // Logic
+        debug("\noutput:");
+        //System.out.println("0 0 2 0 1");                  // Two coords and an int: a node, one of its neighbors,
+        //System.out.println("2 0 2 2 1");                  // number of links connecting them
         do {
-            ArrayList<Node> filteredNodes = getFilteredNodes(nodes);
-            debug("\nfiltered nodes:", filteredNodes);
-            // Output relations with a single neighbor            
-            for (Node node : filteredNodes) {
+            // Establish single link with all nodes having only one neighbor
+            debug("\n#1 Output relations with a single neighbor");
+            for (Node node : getFilteredNodes(nodes)) {
                 if (node.getNeighbors() == 1) {
                     Relation relation = getFirstRelation(node, relations);
                     Node neighbor = relation.getNeighbor(node);
-                    debug("node:" + node.toString() + " | neighbor:" + neighbor.toString());                
+                    debug("node:" + node.toString() + " | neighbor:" + neighbor.toString());
                     node.setLinks(node.getAimedLinks());
                     neighbor.setLinks(neighbor.getLinks() + node.getAimedLinks());
                     relation.setLinks(node.getAimedLinks());
@@ -53,11 +54,23 @@ class Player {
                     relations.remove(relation);
                 }
             }
-        } while (getFilteredNodes(nodes).size() > 0);        
-
-        debug("\noutput:");
-        //System.out.println("0 0 2 0 1");                  // Two coords and an int: a node, one of its neighbors,
-        //System.out.println("2 0 2 2 1");                  // number of links connecting them
+            // Establish single link with all neighbors of a node where aimed >= neighbors
+            debug("\n#2 Output relations for nodes with aimed links >= neighbors");
+            for (Node node : getFilteredNodes(nodes)) {
+                if(node.getAimedLinks() >= node.getNeighbors() && node.getLinks() < node.getAimedLinks()) {
+                    node.setLinks(node.getLinks() + 1);
+                    ArrayList<Relation> adjacentRelations = getAdjacentRelations(node, relations);
+                    for (Relation relation : adjacentRelations) {
+                        Node neighbor = relation.getNeighbor(node);
+                        neighbor.setLinks(neighbor.getLinks() + 1);
+                        debug("node:" + node.toString() + " | neighbor:" + neighbor.toString());                        
+                        relation.setLinks(1);
+                        System.out.println(relation.asOutputString());
+                        relations.remove(relation);                        
+                    }
+                }
+            }
+        } while (getFilteredNodes(nodes).size() > 0);
     } // main() --------------------------------------------------------------------------------------------------
 
     // Fill relations list recursively from first provided node
@@ -78,6 +91,31 @@ class Player {
         }
         return count;
     } // countNeighbors()
+
+    // Return number of nodes from 'nodes' having 'num' number of neighbors
+    static int countAdjacentNodes(int num, ArrayList<Node> nodes) {
+        int count = 0;
+        for (Node node : nodes) {
+            if (node.getNeighbors() == num) { ++count; }
+        }
+        return count;
+    } // countAdjacentNodes()
+
+    // Add relation to relations list if not was already included
+    // Returns true if a relation was added, false otherwise
+    static boolean addNewRelation(Relation newRelation) {
+        boolean found = false;
+        for (Relation relation : relations) {
+            if (relation.equals(newRelation)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) { 
+            relations.add(newRelation);
+        }
+        return !found;
+    } // addNewRelation()
 
     // Return node from nodes list that has same coordinates
     // as the provided ones. Return null if not found
@@ -145,16 +183,7 @@ class Player {
             }
         }
         return neighbor;
-    }// getNeighbors()
-    
-    // Return number of nodes from 'nodes' having 'num' number of neighbors
-    static int countAdjacentNodes(int num, ArrayList<Node> nodes) {
-        int count = 0;
-        for (Node node : nodes) {
-            if (node.getNeighbors() == num) { ++count; }
-        }
-        return count;
-    } // countAdjacentNodes()
+    } // getNeighbors()
 
     // Return relations from 'rels' that has a node with 'num' number of neighbors
     static ArrayList<Relation> getAdjacentRelations(int num, ArrayList<Relation> rels) {
@@ -167,23 +196,17 @@ class Player {
         }
         return adjacents;
     } // getAdjacentRelations()
-    
-    // Add relation to relations list if not was already included
-    // Returns true if a relation was added, false otherwise
-    static boolean addNewRelation(Relation newRelation) {
-        boolean found = false;
-        for (Relation relation : relations) {
-            if (relation.equals(newRelation)) {
-                found = true;
-                break;
-            }
+
+    // Return all relations from 'rels' that contains 'node',
+    // returned list therefore contains all adjacents of 'node'
+    static ArrayList<Relation> getAdjacentRelations(Node node, ArrayList<Relation> rels) {
+        ArrayList<Relation> adjacents = new ArrayList<>();
+        for (Relation relation : rels) {
+            if (relation.hasNode(node)) { adjacents.add(relation); }
         }
-        if (!found) { 
-            relations.add(newRelation);
-        }
-        return !found;
-    } // addNewRelation()
-    
+        return adjacents;        
+    } // getAdjacentRelations()
+
     static void debug(String str) { System.err.println(str); }
     
     // Display generic ArrayLists

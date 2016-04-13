@@ -27,44 +27,38 @@ class Player {
 
         displayGrid(1);                                     // Display grid of nodes with aimed & actual number of links
         displayGrid(0);
-
         getRelations(nodes.get(0));                         // Fill relations list
-
         for (Node node : nodes) {                           // Set nodes' neighbors
             node.setNeighbors(countNeighbors(node));
         }
-        
         debug("\nnodes:", nodes);
         debug("\nrelations:", relations);
-        debug("\nrelations with a single neighbor:",
-            getAdjacentRelations(1, relations));
+        //debug("\nrelations with a single neighbor:",
+        //    getAdjacentRelations(1, relations));
 
-        // Output relations with a single neighbor
-        ArrayList<Node> filteredNodes = getFilteredNodes(nodes);
-        for (Node node : filteredNodes) {
-            if (node.getNeighbors() == 1) {
-                Relation relation = getFirstRelation(node, relations);
-                Node neighbor = relation.getNeighbor(node);
-                neighbor.setLinks(neighbor.getLinks() + neighbor.getAimedLinks());
-                relation.setLinks(node.getAimedLinks());
-                System.out.println(relation.asOutputString());
-                relations.remove(relation);
+        // Logic
+        do {
+            ArrayList<Node> filteredNodes = getFilteredNodes(nodes);
+            debug("\nfiltered nodes:", filteredNodes);
+            // Output relations with a single neighbor            
+            for (Node node : filteredNodes) {
+                if (node.getNeighbors() == 1) {
+                    Relation relation = getFirstRelation(node, relations);
+                    Node neighbor = relation.getNeighbor(node);
+                    debug("node:" + node.toString() + " | neighbor:" + neighbor.toString());                
+                    node.setLinks(node.getAimedLinks());
+                    neighbor.setLinks(neighbor.getLinks() + node.getAimedLinks());
+                    relation.setLinks(node.getAimedLinks());
+                    System.out.println(relation.asOutputString());
+                    relations.remove(relation);
+                }
             }
-        }
+        } while (getFilteredNodes(nodes).size() > 0);        
 
         debug("\noutput:");
         //System.out.println("0 0 2 0 1");                  // Two coords and an int: a node, one of its neighbors,
         //System.out.println("2 0 2 2 1");                  // number of links connecting them
     } // main() --------------------------------------------------------------------------------------------------
-
-    // Count number of neighbors of a node from its relations
-    static int countNeighbors(Node node) {
-        int count = 0;
-        for (Relation relation : relations) {
-            if (relation.hasNode(node)) { ++count; }
-        }
-        return count;
-    } // countNeighbors()
 
     // Fill relations list recursively from first provided node
     static void getRelations(Node n) {
@@ -75,6 +69,15 @@ class Player {
             }
         }
     } // getRelations()
+
+    // Count number of neighbors of a node from its relations
+    static int countNeighbors(Node node) {
+        int count = 0;
+        for (Relation relation : relations) {
+            if (relation.hasNode(node)) { ++count; }
+        }
+        return count;
+    } // countNeighbors()
 
     // Return node from nodes list that has same coordinates
     // as the provided ones. Return null if not found

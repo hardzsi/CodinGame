@@ -18,37 +18,28 @@ class Player {
             String line = in.nextLine();                    // Width number of chars, each: 1-8  or '.':
                                                             // node with aimed number of links or no node
             for (int x = 0; x < line.length(); ++x) {
-                if (line.charAt(x) != '.') {                // Add node to odes list
+                if (line.charAt(x) != '.') {                // Add node to nodes list
                     nodes.add(new Node(x, y, Character.
                         getNumericValue(line.charAt(x))));
                 }
             }
         }
 
-        displayGrid(0);                                     // Display grid with actual and aimed number of nodes
-        displayGrid(1);
+        displayGrid(1);                                     // Display grid of nodes with aimed & actual number of links
+        displayGrid(0);
 
-        getRelations(getFirstNode());                       // Filling the relations list
+        getRelations(nodes.get(0));                         // Fill relations list
 
-        debug("\nnodes:");
-        for (Node node : nodes) {                           // Set neighbors of nodes and display those
-            node.setNeighbors(maxLinks(node));
-            debug(node.toString());
+        for (Node node : nodes) {                           // Set nodes' neighbors
+            node.setNeighbors(countNeighbors(node));
         }
+        
+        debug("\nnodes:", nodes);
+        debug("\nrelations:", relations);
+        debug("\nrelations with a single neighbor:",
+            getAdjacentRelations(1, relations));
 
-        debug("\nrelations:");
-        for (Relation relation : relations) {               // Display relations
-            debug (relation.toString());
-        }
-
-        debug("\nrelations with only one neighbor:");       // Display relations with only one neighbor
-        ArrayList<Relation> singleNeighbors =
-            getAdjacentRelations(1, relations);
-        for (Relation relation : singleNeighbors) {
-            debug (relation.toString());
-        }
-
-        // Output relations with only one neighbor
+        // Output relations with a single neighbor
         ArrayList<Node> filteredNodes = getFilteredNodes(nodes);
         for (Node node : filteredNodes) {
             if (node.getNeighbors() == 1) {
@@ -66,15 +57,14 @@ class Player {
         //System.out.println("2 0 2 2 1");                  // number of links connecting them
     } // main() --------------------------------------------------------------------------------------------------
 
-    // Determinde maximum number of links of a node (neighbors) from its relations
-    static int maxLinks(Node node) {
+    // Count number of neighbors of a node from its relations
+    static int countNeighbors(Node node) {
         int count = 0;
         for (Relation relation : relations) {
-            Node[] nodeAB = relation.getNodes();
-            if (node.equals(nodeAB[0]) || node.equals(nodeAB[1])) count++;
+            if (relation.hasNode(node)) { ++count; }
         }
         return count;
-    } // maxLinks()
+    } // countNeighbors()
 
     // Fill relations list recursively from first provided node
     static void getRelations(Node n) {
@@ -95,23 +85,13 @@ class Player {
         return null;
     } // getNode()
     
-    // Return top leftmost node or null if not found in nodes list
-    static Node getFirstNode() {
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {            
-                if (getNode(x, y) != null) return getNode(x, y);
-            }
-        }
-        return null;
-    } // getFirstNode()
-    
     // Return first relation from 'rels' that contains node or null if not found node
     static Relation getFirstRelation(Node node, ArrayList<Relation> rels) {
         for (Relation relation : rels) {
             if (relation.hasNode(node)) { return relation; }
         }
         return null;
-    }
+    } // getFirstRelation()
     
     // Return list of nodes where actual and aimed number of nodes differ
     static ArrayList<Node> getFilteredNodes(ArrayList<Node> nodeList) {
@@ -129,7 +109,7 @@ class Player {
         int xNode = n.getX();
         int yNode = n.getY();
         ArrayList<Node> neighbor = new ArrayList<>();
-        if (xNode > 0) {                            // Check left neighbor
+        if (xNode > 0) {                                    // Check left neighbor
             for (int x = xNode - 1; x > 0; --x) {
                 if (getNode(x, yNode) != null) {
                     neighbor.add(getNode(x, yNode));
@@ -137,7 +117,7 @@ class Player {
                 }
             }
         }
-        if (xNode < width - 1) {                    // Check right neighbor
+        if (xNode < width - 1) {                            // Check right neighbor
             for (int x = xNode + 1; x < width; ++x) {
                 if (getNode(x, yNode) != null) {
                     neighbor.add(getNode(x, yNode));
@@ -145,7 +125,7 @@ class Player {
                 }
             }
         }
-        if (yNode > 0) {                            // Check up neighbor
+        if (yNode > 0) {                                    // Check up neighbor
             for (int y = yNode - 1; y > 0; --y) {
                 if (getNode(xNode, y) != null) {
                     neighbor.add(getNode(xNode, y));
@@ -153,7 +133,7 @@ class Player {
                 }
             }
         }
-        if (yNode < height - 1) {                   // Check down neighbor
+        if (yNode < height - 1) {                           // Check down neighbor
             for (int y = yNode + 1; y < height; ++y) {
                 if (getNode(xNode, y) != null) {
                     neighbor.add(getNode(xNode, y));
@@ -202,6 +182,12 @@ class Player {
     } // addNewRelation()
     
     static void debug(String str) { System.err.println(str); }
+    
+    // Display generic ArrayLists
+    static <T> void debug(String str, ArrayList<T> list) { 
+        System.err.println(str);
+        for (T element : list) { debug(element.toString()); }
+    } // debug()
     
     // Display grid with 0:actual,1:aimed,2:filtered (actual<>aimed) number of links
     static void displayGrid(int type) {

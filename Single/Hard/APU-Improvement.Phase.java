@@ -33,6 +33,7 @@ class Player {
 
         displayGrid(0);
         displayGrid(1);
+        //displayGrid(2);
         getRelations(getFirstNode());               // Filling the relations list
 
         debug("\nnodes:");
@@ -44,13 +45,20 @@ class Player {
         debug("\nrelations:");
         for (Relation relation : relations) {       // Display relations
             debug (relation.toString());
-            System.out.println(relation.asOutputString());
+            //System.out.println(relation.asOutputString());
         }
+
+        debug("\nrelations with one neighbor only:");
+        ArrayList<Relation> singleAdjacents = getAdjacentRelations(1, relations);
+        for (Relation relation : singleAdjacents) { // Display relations
+            debug (relation.toString());
+            //System.out.println(relation.asOutputString());
+        }       
 
         debug("\noutput:");
         //System.out.println("0 0 2 0 1");          // Two coords and an int: a node, one of its neighbors,
         //System.out.println("2 0 2 2 1");          // number of links connecting them
-    } // main()
+    } // main() ---------------------------------------------------------
 
     // Determinde maximum number of links of a node (neighbors) from its relations
     static int maxLinks(Node node) {
@@ -140,6 +148,27 @@ class Player {
         return neighbor;
     }// getNeighbors()
     
+    // Return number of nodes from 'nodes' having 'num' number of neighbors
+    static int countAdjacentNodes(int num, ArrayList<Node> nodes) {
+        int count = 0;
+        for (Node node : nodes) {
+            if (node.getNeighbors() == num) { ++count; }
+        }
+        return count;
+    } // countAdjacentNodes()
+
+    // Return relations from 'rels' that has a node with 'num' number of neighbors
+    static ArrayList<Relation> getAdjacentRelations(int num, ArrayList<Relation> rels) {
+        ArrayList<Relation> adjacents = new ArrayList<>();
+        for (Relation relation : rels) {
+            Node[] nodeAB = relation.getNodes();
+            if (nodeAB[0].getNeighbors() == num || nodeAB[1].getNeighbors() == num) {
+                adjacents.add(relation);
+            }
+        }
+        return adjacents;
+    } // getAdjacentRelations()
+    
     // Add relation to relations list if not was already included
     // Returns true if a relation was added, false otherwise
     static boolean addNewRelation(Relation newRelation) {
@@ -157,20 +186,10 @@ class Player {
     } // addNewRelation()
     
     static void debug(String str) { System.err.println(str); }
-
-    /*static void displayGrid() {
-        for (int y = 0; y < grid[0].length; ++y) {
-            String line = "";
-            for (int x = 0; x < grid.length; ++x) {
-                line += grid[x][y];
-            }
-            debug(line);
-        }
-    }// displayGrid()*/
     
-    // Display the grid with actual (type=0) or aimed (type=1) number of links
+    // Display grid with 0:actual,1:aimed,2:filtered (actual<>aimed) number of links
     static void displayGrid(int type) {
-        debug("\n" + (type == 0 ? "links:" : "aimed links:"));
+        debug("\n" + (type == 0 ? "actual" : (type == 1 ? "aimed" : "filtered")) + " links:");
         for (int y = 0; y < height; ++y) {
             String line = "";
             for (int x = 0; x < width; ++x) {
@@ -178,13 +197,15 @@ class Player {
                 if (node == null) {
                     line += type == 0 ? "." : "0";
                 } else {
-                    line += type == 0 ? node.getLinks() : node.getAimedLinks();
+                    int actual = node.getLinks();
+                    int aimed = node.getAimedLinks();
+                    line += type == 0 ? actual : (type == 1 ? aimed : aimed - actual);
                 }
             }
             debug(line);
         }
     } // displayGrid()
-}
+} // class Player -------------------------------------------------------
 
 // Node class with coordinates, actual and aimed number of links
 // leading to it as well as number of neighbors it can be linked to

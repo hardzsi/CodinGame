@@ -2,12 +2,11 @@
 import java.util.*;
 
 class Player {
-    static int[][] grid;                                // X,Y grid containing amount of links between 
-                                                        // neighbouring nodes (1-8) or 0 if no node
-    static int width, height;                           // Number of grid cells on X and Y axis
-    static ArrayList<Relation> relations =              // Relations between neighboring nodes 
-        new ArrayList<>();                              // with no/single/double link between them
-    static ArrayList<Node> nodes = new ArrayList<>();   // List of all nodes
+    static int width, height;                               // Number of grid cells on X and Y axis
+    static ArrayList<Relation> relations =                  // Relations between neighboring nodes 
+        new ArrayList<>();                                  // with no/single/double link between them
+    static ArrayList<Node> nodes = new ArrayList<>();       // List of all nodes
+
     public static void main(String args[]) {
         Scanner in = new Scanner(System.in);
         width = in.nextInt();
@@ -15,50 +14,57 @@ class Player {
         height = in.nextInt();
         in.nextLine();
         debug("grid:" + width + "x" + height);
-        grid = new int[width][height];
-        for (int y = 0; y < height; ++y) {              // Filling the grid
-            String line = in.nextLine();                // Width number of chars, each: 1-8  or '.':
-                                                        // node with aimed number of links or no node
+        for (int y = 0; y < height; ++y) {                  // Filling the grid
+            String line = in.nextLine();                    // Width number of chars, each: 1-8  or '.':
+                                                            // node with aimed number of links or no node
             for (int x = 0; x < line.length(); ++x) {
-                if (line.charAt(x) == '.') {            // No node
-                    grid[x][y] = 0;
-                } else {                                // Add node to grid and nodes list
-                    int aimedLinks = Character.
-                        getNumericValue(line.charAt(x));
-                    grid[x][y] = aimedLinks;
-                    nodes.add(new Node(x, y, aimedLinks));
+                if (line.charAt(x) != '.') {                // Add node to odes list
+                    nodes.add(new Node(x, y, Character.
+                        getNumericValue(line.charAt(x))));
                 }
             }
         }
 
-        displayGrid(0);
+        displayGrid(0);                                     // Display grid with actual and aimed number of nodes
         displayGrid(1);
-        //displayGrid(2);
-        getRelations(getFirstNode());               // Filling the relations list
+
+        getRelations(getFirstNode());                       // Filling the relations list
 
         debug("\nnodes:");
-        for (Node node : nodes) {
+        for (Node node : nodes) {                           // Set neighbors of nodes and display those
             node.setNeighbors(maxLinks(node));
             debug(node.toString());
         }
 
         debug("\nrelations:");
-        for (Relation relation : relations) {       // Display relations
+        for (Relation relation : relations) {               // Display relations
             debug (relation.toString());
-            //System.out.println(relation.asOutputString());
         }
 
-        debug("\nrelations with one neighbor only:");
-        ArrayList<Relation> singleAdjacents = getAdjacentRelations(1, relations);
-        for (Relation relation : singleAdjacents) { // Display relations
+        debug("\nrelations with only one neighbor:");       // Display relations with only one neighbor
+        ArrayList<Relation> singleNeighbors =
+            getAdjacentRelations(1, relations);
+        for (Relation relation : singleNeighbors) {
             debug (relation.toString());
-            //System.out.println(relation.asOutputString());
-        }       
+        }
+
+        // Output relations with only one neighbor
+        ArrayList<Node> filteredNodes = getFilteredNodes(nodes);
+        for (Node node : filteredNodes) {
+            if (node.getNeighbors() == 1) {
+                Relation relation = getFirstRelation(node, relations);
+                Node neighbor = relation.getNeighbor(node);
+                neighbor.setLinks(neighbor.getLinks() + neighbor.getAimedLinks());
+                relation.setLinks(node.getAimedLinks());
+                System.out.println(relation.asOutputString());
+                relations.remove(relation);
+            }
+        }
 
         debug("\noutput:");
-        //System.out.println("0 0 2 0 1");          // Two coords and an int: a node, one of its neighbors,
-        //System.out.println("2 0 2 2 1");          // number of links connecting them
-    } // main() ---------------------------------------------------------
+        //System.out.println("0 0 2 0 1");                  // Two coords and an int: a node, one of its neighbors,
+        //System.out.println("2 0 2 2 1");                  // number of links connecting them
+    } // main() --------------------------------------------------------------------------------------------------
 
     // Determinde maximum number of links of a node (neighbors) from its relations
     static int maxLinks(Node node) {
@@ -74,7 +80,9 @@ class Player {
     static void getRelations(Node n) {
         ArrayList<Node> neighbors = getNeighbors(n);
         for (Node neighbor : neighbors) {
-            if (addNewRelation(new Relation(n, neighbor))) { getRelations(neighbor); }
+            if (addNewRelation(new Relation(n, neighbor))) {
+                getRelations(neighbor);
+            }
         }
     } // getRelations()
 
@@ -91,11 +99,19 @@ class Player {
     static Node getFirstNode() {
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {            
-                if (grid[x][y] != 0) return getNode(x, y);
+                if (getNode(x, y) != null) return getNode(x, y);
             }
         }
         return null;
     } // getFirstNode()
+    
+    // Return first relation from 'rels' that contains node or null if not found node
+    static Relation getFirstRelation(Node node, ArrayList<Relation> rels) {
+        for (Relation relation : rels) {
+            if (relation.hasNode(node)) { return relation; }
+        }
+        return null;
+    }
     
     // Return list of nodes where actual and aimed number of nodes differ
     static ArrayList<Node> getFilteredNodes(ArrayList<Node> nodeList) {
@@ -115,7 +131,7 @@ class Player {
         ArrayList<Node> neighbor = new ArrayList<>();
         if (xNode > 0) {                            // Check left neighbor
             for (int x = xNode - 1; x > 0; --x) {
-                if (grid[x][yNode] != 0) {
+                if (getNode(x, yNode) != null) {
                     neighbor.add(getNode(x, yNode));
                     break;
                 }
@@ -123,7 +139,7 @@ class Player {
         }
         if (xNode < width - 1) {                    // Check right neighbor
             for (int x = xNode + 1; x < width; ++x) {
-                if (grid[x][yNode] != 0) {
+                if (getNode(x, yNode) != null) {
                     neighbor.add(getNode(x, yNode));
                     break;
                 }
@@ -131,7 +147,7 @@ class Player {
         }
         if (yNode > 0) {                            // Check up neighbor
             for (int y = yNode - 1; y > 0; --y) {
-                if (grid[xNode][y] != 0) {
+                if (getNode(xNode, y) != null) {
                     neighbor.add(getNode(xNode, y));
                     break;
                 }
@@ -139,7 +155,7 @@ class Player {
         }
         if (yNode < height - 1) {                   // Check down neighbor
             for (int y = yNode + 1; y < height; ++y) {
-                if (grid[xNode][y] != 0) {
+                if (getNode(xNode, y) != null) {
                     neighbor.add(getNode(xNode, y));
                     break;
                 }
@@ -257,6 +273,10 @@ class Relation implements Comparable<Relation> {
     
     public Node getNeighbor(Node node) {
         return node.equals(nodeB) ? nodeA : nodeB;
+    }
+    
+    public boolean hasNode(Node node) {
+        return node.equals(nodeA) || node.equals(nodeB);
     }
     
     public void setLinks(int actualLinks) { links = actualLinks; }

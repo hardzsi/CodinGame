@@ -14,7 +14,7 @@ class Player {
         in.nextLine();
         height = in.nextInt();
         in.nextLine();
-        debug("width: " + width + ", height:" + height);
+        debug("grid:" + width + "x" + height);
         grid = new int[width][height];
         for (int y = 0; y < height; ++y) {              // Filling the grid
             String line = in.nextLine();                // Width number of chars, each: 1-8  or '.':
@@ -30,27 +30,29 @@ class Player {
                 }
             }
         }
-        displayGrid();
+
+        displayGrid(0);
+        displayGrid(1);
         getRelations(getFirstNode());               // Filling the relations list
 
         debug("\nnodes:");
         for (Node node : nodes) {
-            node.setMaxLinks(maxLinks(node));
+            node.setNeighbors(maxLinks(node));
             debug(node.toString());
         }
 
         debug("\nrelations:");
         for (Relation relation : relations) {       // Display relations
             debug (relation.toString());
-            System.out.println(relation.getAsString() + " 1");
+            System.out.println(relation.asOutputString());
         }
 
         debug("\noutput:");
-        //System.out.println("0 0 2 0 1");          // Two coords and an int: a node, one of its neighbors, number of links connecting them
-        //System.out.println("2 0 2 2 1");
-    }// main()
+        //System.out.println("0 0 2 0 1");          // Two coords and an int: a node, one of its neighbors,
+        //System.out.println("2 0 2 2 1");          // number of links connecting them
+    } // main()
 
-    // Determinde maximum number of links of node from relations
+    // Determinde maximum number of links of a node (neighbors) from its relations
     static int maxLinks(Node node) {
         int count = 0;
         for (Relation relation : relations) {
@@ -66,7 +68,7 @@ class Player {
         for (Node neighbor : neighbors) {
             if (addNewRelation(new Relation(n, neighbor))) { getRelations(neighbor); }
         }
-    }// getRelations()
+    } // getRelations()
 
     // Return node from nodes list that has same coordinates
     // as the provided ones. Return null if not found
@@ -85,7 +87,18 @@ class Player {
             }
         }
         return null;
-    }// getFirstNode()
+    } // getFirstNode()
+    
+    // Return list of nodes where actual and aimed number of nodes differ
+    static ArrayList<Node> getFilteredNodes(ArrayList<Node> nodeList) {
+        ArrayList<Node> result = new ArrayList<>();
+        for (Node node : nodeList) {
+            if (node.getLinks() != node.getAimedLinks()) {
+                result.add(node);
+            }
+        }
+        return result;
+    } // getFilteredNodes()
     
     // Return list of nodes that may link to provided node
     static ArrayList<Node> getNeighbors(Node n) {
@@ -141,11 +154,11 @@ class Player {
             relations.add(newRelation);
         }
         return !found;
-    }// addNewRelation()
+    } // addNewRelation()
     
     static void debug(String str) { System.err.println(str); }
 
-    static void displayGrid() {
+    /*static void displayGrid() {
         for (int y = 0; y < grid[0].length; ++y) {
             String line = "";
             for (int x = 0; x < grid.length; ++x) {
@@ -153,58 +166,87 @@ class Player {
             }
             debug(line);
         }
-    }// displayGrid()
+    }// displayGrid()*/
+    
+    // Display the grid with actual (type=0) or aimed (type=1) number of links
+    static void displayGrid(int type) {
+        debug("\n" + (type == 0 ? "links:" : "aimed links:"));
+        for (int y = 0; y < height; ++y) {
+            String line = "";
+            for (int x = 0; x < width; ++x) {
+                Node node = getNode(x, y);
+                if (node == null) {
+                    line += type == 0 ? "." : "0";
+                } else {
+                    line += type == 0 ? node.getLinks() : node.getAimedLinks();
+                }
+            }
+            debug(line);
+        }
+    } // displayGrid()
 }
 
-// Node class with coordinates and actual, maximum and aimed number of links to it
+// Node class with coordinates, actual and aimed number of links
+// leading to it as well as number of neighbors it can be linked to
 // Two nodes considered equal if their coordinates are the same
 class Node {
     public Node(int x, int y, int aimed) {
         this.x = x; this.y = y;
-        Arrays.fill(links, 0);
-        links[2] = aimed;
+        aimedLinks = aimed;
     }
     
     @Override public boolean equals(Object other) {
         if (other == null) { return false; }
-        int otherX = ((Node)other).getX();
-        int otherY = ((Node)other).getY();
-        if (x == otherX && y == otherY) { return true; }
+        if (x == ((Node)other).getX() &&
+            y == ((Node)other).getY()) { return true; }
         return false;
     }
     
-    @Override public String toString() { return x + "," + y + " " + Arrays.toString(links); }
+    @Override public String toString() {
+        return x + "," + y + " (links:" + links + ", aimed:" +
+        aimedLinks + ", neighbors:" + neighbors + ")";
+    }
     
-    public int getX() { return x; }
-    public int getY() { return y; }
-    public int getActLinks() { return links[0]; }
-    public int getMaxLinks() { return links[1]; }
-    public int getAimedLinks() { return links[2]; }
-    public void setActLinks(int actual) { links[0] = actual; }
-    public void setMaxLinks(int maximum) { links[1] = maximum; }
-    public void setAimedLinks(int aimed) { links[2] = aimed; }
+    public int getX()           { return x; }
+    public int getY()           { return y; }
+    public int getLinks()       { return links; }
+    public int getAimedLinks()  { return aimedLinks; }
+    public int getNeighbors()   { return neighbors; }
+    public void setLinks(int actual)     { links = actual; }
+    public void setAimedLinks(int aimed) { aimedLinks = aimed; }
+    public void setNeighbors(int n)      { neighbors = n; }
 
     private int x;                                  // Coordinates of node
     private int y;
-    private int[] links = new int[3];               // Actual, maximum and aimed number of links
+    private int links = 0;                          // Actual number of links
+    private int aimedLinks;                         // Aimed number of links
+    private int neighbors = 0;                      // Number of neighbors
+    //private int[] links = new int[3];               // Actual, maximum and aimed number of links
 } // class Node
 
 // A relation is a pair of connecting nodes with at most two links
 // Two relations considered equal _even if_ their nodes are switched
 // Comparision based _only_ on number of actual links
 class Relation implements Comparable<Relation> {
-    Relation(Node a, Node b) { nodeA = a; nodeB = b; link = 0; }
+    Relation(Node a, Node b) { nodeA = a; nodeB = b; links = 0; }
 
-    public int getActLinks() { return link; }
+    public int getLinks() { return links; }
+    
     public Node[] getNodes() { return new Node[] { nodeA, nodeB }; }
-    public void setActLinks(int actual) { link = actual; }
-    public String getAsString() {
+    
+    public Node getNeighbor(Node node) {
+        return node.equals(nodeB) ? nodeA : nodeB;
+    }
+    
+    public void setLinks(int actualLinks) { links = actualLinks; }
+    
+    public String asOutputString() {
         return "" + nodeA.getX() + " " + nodeA.getY() + " " +
-                    nodeB.getX() + " " + nodeB.getY();
+                    nodeB.getX() + " " + nodeB.getY() + " " + links;
     }
 
     @Override public int compareTo(Relation other) {
-        return link - other.getActLinks();
+        return links - other.getLinks();
     }
 
     @Override public boolean equals(Object other) {
@@ -212,16 +254,17 @@ class Relation implements Comparable<Relation> {
         Node[] node = ((Relation)other).getNodes();
         if (((nodeA.equals(node[0]) && nodeB.equals(node[1]))  ||
              (nodeA.equals(node[1]) && nodeB.equals(node[0]))) &&
-             link == ((Relation)other).getActLinks()) { return true; }
+             links == ((Relation)other).getLinks()) { return true; }
         return false;
     }
 
-    @Override public String toString() { 
+    @Override public String toString() {            // "relation nodeA [x|-|=] nodeB" where [] represents number of links
         return "relation " + nodeA + " " +
-            (link == 0 ? "x" : link == 1 ? "-" : "=") + " " + nodeB;
+            (links == 0 ? "x" : links == 1 ? "-" : "=") +
+            " " + nodeB;
     }
 
-    private Node nodeA;                             // Nodes of a relation
+    private Node nodeA;                             // Nodes of relation
     private Node nodeB;
-    private int link;                               // Actual links between
-}// class Relation
+    private int links;                              // Actual links between nodes
+} // class Relation

@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0924a (Tests 1,2,10 passed)
+// APU:Improvement Phase 0924c (Tests 1-4,9,10 passed)
 import java.util.*;
 
 class Player {
@@ -140,8 +140,26 @@ class Player {
                 debug("found 1,1,1 in node:" + node.toString());
                 incrementLinksTo(1, node); 
             } else {
-                debug("FUCK! specified rules did not catch" +
+                debug("Specified rules did not catch" +
                       " the following nodes:", getIncompleteNodes());
+                for (Node n : getIncompleteNodes()) {
+                    if(n.aimedLinks() >= n.neighbors()) {
+                        Relation relation = getFirstRelation(n);
+                        if (relation != null && !relation.isComplete()) {
+                             Node neighbor = relation.getNeighbor(n);
+                            int increment = (int)Math.min(Math.min  // Determine possible link increment, limiting it to 2
+                                (n.missingLinks(), neighbor.missingLinks()), 2);
+                            n.setLinks(n.links() + increment);
+                            neighbor.setLinks(neighbor.links() + increment);
+                            relation.setLinks(increment);                      
+                            if (relation.getLinks() > 0) {
+                                debug("out:" + relation.asOutputString());
+                                System.out.println(relation.asOutputString());                             
+                            }                       
+                        }
+                    }
+                }
+                displayGrid("", 2, "\n");               
             }
             cleanRelations();
         } while(!getIncompleteNodes().isEmpty());
@@ -270,12 +288,14 @@ class Player {
     // and connections to the specified value
     static void incrementLinksTo(int increment, Node node) {
         ArrayList<Relation> specifiedRelations = getSpecifiedRelations(node, increment);
+        debug("relations to increment:", specifiedRelations);
         node.setLinks(node.neighbors() * increment);
         for (Relation relation : specifiedRelations) {
             Node neighbor = relation.getNeighbor(node);
-            neighbor.setLinks(increment);
+            neighbor.setLinks(neighbor.links() + increment);
             relation.setLinks(increment - relation.getLinks());             // Incrementing just 1 if relation
                                                                             // already has a single link
+            debug("out:" + relation.asOutputString());
             System.out.println(relation.asOutputString());
             relation.setLinks(increment);
         }

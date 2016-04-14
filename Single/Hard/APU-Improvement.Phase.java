@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0923 (Tests 2,10 passed)
+// APU:Improvement Phase 0924a (Tests 1,2,10 passed)
 import java.util.*;
 
 class Player {
@@ -111,23 +111,34 @@ class Player {
         
         do {
             Node node;
-            if ((node = getSpecifiedNode(8, 4)) != null) {      // 1st incomplete node matching aimed links & neighbors
+            if ((node = getSpecifiedNode(8, 4, 2)) != null) {   // 1st incomplete node matching aimed links & neighbors
+                debug("found 8,4,2 in node:" + node.toString());
                 incrementLinksTo(2, node);                      // Increment links of node, all its neighbors
-                debug("found 8, 4 in node:" + node.toString()); // and connections to the specified value
-            } else if ((node = getSpecifiedNode(7, 4)) != null) {
-                incrementLinksTo(1, node); debug("found 7, 4 in node:" + node.toString());
-            } else if ((node = getSpecifiedNode(6, 3)) != null) {
-                incrementLinksTo(2, node); debug("found 6, 3 in node:" + node.toString());
-            } else if ((node = getSpecifiedNode(5, 3)) != null) {
-                incrementLinksTo(1, node); debug("found 5, 3 in node:" + node.toString());
-            } else if ((node = getSpecifiedNode(4, 2)) != null) {
-                incrementLinksTo(2, node); debug("found 4, 2 in node:" + node.toString());
-            } else if ((node = getSpecifiedNode(3, 2)) != null) {
-                incrementLinksTo(1, node); debug("found 3, 2 in node:" + node.toString());
-            } else if ((node = getSpecifiedNode(2, 1)) != null) {
-                incrementLinksTo(2, node); debug("found 2, 1 in node:" + node.toString());
-            } else if ((node = getSpecifiedNode(1, 1)) != null) {
-                incrementLinksTo(1, node); debug("found 1, 1 in node:" + node.toString());
+                                                                // and connections to the specified value
+            } else if ((node = getSpecifiedNode(6, 3, 2)) != null) {
+                debug("found 6,3,2 in node:" + node.toString());
+                incrementLinksTo(2, node);
+            } else if ((node = getSpecifiedNode(4, 2, 2)) != null) {
+                debug("found 4,2,2 in node:" + node.toString());
+                incrementLinksTo(2, node);
+            } else if ((node = getSpecifiedNode(2, 1, 2)) != null) {
+                debug("found 2,1,2 in node:" + node.toString());
+                incrementLinksTo(2, node); 
+            } else if ((node = getSpecifiedNode(7, 4, 1)) != null) {
+                debug("found 7,4,1 in node:" + node.toString());
+                incrementLinksTo(1, node);
+            } else if ((node = getSpecifiedNode(5, 3, 1)) != null) {
+                debug("found 5,3,1 in node:" + node.toString());
+                incrementLinksTo(1, node);
+            } else if ((node = getSpecifiedNode(3, 2, 1)) != null) {
+                debug("found 3,2,1 in node:" + node.toString());
+                incrementLinksTo(1, node);
+            } else if ((node = getSpecifiedNode(2, 2, 1)) != null) {
+                debug("found 2,2,1 in node:" + node.toString());
+                incrementLinksTo(1, node); 
+            } else if ((node = getSpecifiedNode(1, 1, 1)) != null) {
+                debug("found 1,1,1 in node:" + node.toString());
+                incrementLinksTo(1, node); 
             } else {
                 debug("FUCK! specified rules did not catch" +
                       " the following nodes:", getIncompleteNodes());
@@ -228,33 +239,48 @@ class Player {
         return null;
     } // getFirstRelation()
 
-    // Return first incomplete node matching aimed links & neighbors
-    // or null if no match
-    static Node getSpecifiedNode(int aimed, int neighbors) {
+    // Return first incomplete node that match aimed links and 
+    // neighbors, also having less links than aimed number of
+    // connections to be established -- or null if no matching
+    static Node getSpecifiedNode(int aimed, int neighbors, int increment) {
         for (Node node : nodes) {
-            if (!node.isComplete() && node.aimedLinks() == aimed &&
-                    node.neighbors() == neighbors) { return node; }
+            if (!node.isComplete() && (node.aimedLinks() == aimed) &&
+                (node.neighbors() == neighbors) &&
+                (node.links() < (node.neighbors() * increment))) {
+                return node;
+            }
         }
         return null;
     } // getSpecifiedNode()
 
+    // Return incomplete relations of node that have less links
+    // than increment -- or empty list if not found such ones
+    static ArrayList<Relation> getSpecifiedRelations(Node node, int increment) {
+        ArrayList<Relation> result = new ArrayList<>();
+        for (Relation relation : relations) {
+            if (!relation.isComplete() && relation.hasNode(node) &&
+                (relation.getLinks() < increment)) {
+                result.add(relation);
+            }
+        }
+        return result;
+    } // getSpecifiedRelations()
+
     // Increment links of specified node, all its neighbors
     // and connections to the specified value
     static void incrementLinksTo(int increment, Node node) {
-        int aimed = node.aimedLinks();
-        int neighbors = node.neighbors();
-        node.setLinks(increment * neighbors);
-        for (Relation relation : getAdjacentRelations(node)) {
+        ArrayList<Relation> specifiedRelations = getSpecifiedRelations(node, increment);
+        node.setLinks(node.neighbors() * increment);
+        for (Relation relation : specifiedRelations) {
             Node neighbor = relation.getNeighbor(node);
-            int neighborIncrement = increment - neighbor.links();
             neighbor.setLinks(increment);
-            relation.setLinks(neighborIncrement);
-            debug("rel: " + relation.asOutputString() + " | " + relation);
+            relation.setLinks(increment - relation.getLinks());             // Incrementing just 1 if relation
+                                                                            // already has a single link
             System.out.println(relation.asOutputString());
-            relations.remove(relation);
+            relation.setLinks(increment);
         }
         displayGrid("", 2, "\n");
-    }
+    } // incrementLinksTo()
 
     // Return list of nodes from 'nodes' where actual number of links
     // less than aimed. Empty list returned if all nodes are complete
@@ -307,10 +333,7 @@ class Player {
         if (relations.isEmpty()) { return false; }
         ArrayList<Relation> removable = new ArrayList<>();
         for (Relation relation : relations) {                       // Collect
-            Node[] nodeAB = relation.getNodes();
-            if ((nodeAB[0].isComplete() || nodeAB[1].isComplete()) || relation.getLinks() == 2) {
-                removable.add(relation);
-            }
+            if (relation.isComplete()) { removable.add(relation); }
         }
         if (!removable.isEmpty()) {                                 // Remove
             relations.removeAll(removable);
@@ -406,6 +429,8 @@ class Relation implements Comparable<Relation> {
     public boolean hasNode(Node node) {
         return node.equals(nodeA) || node.equals(nodeB);
     }
+    
+    public boolean isComplete() { return nodeA.isComplete() || nodeB.isComplete() || links == 2; }
     
     public void setLinks(int actualLinks) { links = actualLinks; }
     

@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0920a (Tests 1-3,5,9,10 passed)
+// APU:Improvement Phase 0920b (Tests 1-5,9,10 passed)
 import java.util.*;
 
 class Player {
@@ -13,7 +13,6 @@ class Player {
         in.nextLine();
         height = in.nextInt();
         in.nextLine();
-        //debug("grid:" + width + "x" + height);
         for (int y = 0; y < height; ++y) {                  // Filling the grid
             String line = in.nextLine();                    // Width number of chars, each: 1-8  or '.':
                                                             // node with aimed number of links or no node
@@ -25,8 +24,7 @@ class Player {
             }
         }
 
-        displayGrid("\n", 1, "");                               // Display grid of nodes w/ aimed & actual number of links
-        //displayGrid("\n", 0, "");
+        displayGrid("\n", 1, "");                               // Display grid of nodes wit aimed number of links
         getRelations(nodes.get(0));                             // Fill relations list
         for (Node node : nodes) {                               // Set nodes' neighbors
             node.setNeighbors(countNeighbors(node));
@@ -40,22 +38,51 @@ class Player {
         //System.out.println("0 0 2 0 1");                      // Two coords and an int: a node, one of its neighbors,
         //System.out.println("2 0 2 2 1");                      // number of links connecting them
         do {
-            // Establish single link with all nodes having only one neighbor
+            // 1: Establish double link with all nodes having 2 neighbors and their aimed links = 4
+            for (Node node : getFilteredNodes(nodes)) {
+                if (node.neighbors() == 2 && node.aimedLinks() == 4) {
+                    ArrayList<Relation> adjRelations = getAdjacentRelations(node);
+                    if (adjRelations.size() != 2) debug("FUCK! How???");
+                    Relation relationA = adjRelations.get(0);
+                    Relation relationB = adjRelations.get(1);
+                    Node neighborA = relationA.getNeighbor(node);
+                    Node neighborB = relationB.getNeighbor(node);
+                    node.setLinks(node.aimedLinks());                    
+                    neighborA.setLinks(neighborA.links() + 2);
+                    neighborB.setLinks(neighborB.links() + 2);
+                    relationA.setLinks(2);
+                    relationB.setLinks(2);
+                    debug("1A: " + relationA.asOutputString() + " | " + relationA);
+                    debug("1B: " + relationB.asOutputString() + " | " + relationB);
+                    displayGrid("", 2, "\n");
+                    System.out.println(relationA.asOutputString());
+                    System.out.println(relationB.asOutputString());
+                    relations.remove(relationA);
+                    relations.remove(relationB);
+                    break;
+                }
+            }
+            cleanRelations();
+            
+            // 2: Establish single or double link (aimed) with all nodes having only one neighbor
             for (Node node : getFilteredNodes(nodes)) {
                 if (node.neighbors() == 1) {
                     Relation relation = getFirstRelation(node);
                     Node neighbor = relation.getNeighbor(node);
-                    node.setLinks(node.aimedLinks());
-                    neighbor.setLinks(neighbor.links() + node.aimedLinks());
-                    relation.setLinks(node.aimedLinks());
-                    debug("A filtered nodes:", getFilteredNodes(nodes));
-                    debug("A: " + relation.asOutputString() + " | " + relation);
+                    int aimed = node.aimedLinks();              // single or double link
+                    node.setLinks(aimed);
+                    neighbor.setLinks(neighbor.links() + aimed);
+                    relation.setLinks(aimed);
+                    debug("2: " + relation.asOutputString() + " | " + relation);
                     displayGrid("", 2, "\n");
                     System.out.println(relation.asOutputString());
                     relations.remove(relation);
+                    break;
                 }
             }
-            // Establish single link with all neighbors of a node where aimed >= neighbors
+            cleanRelations();
+
+            // 3: Establish single link with all neighbors of a node where aimed >= neighbors
             for (Node node : getFilteredNodes(nodes)) {
                 if(node.aimedLinks() >= node.neighbors() &&
                             node.links() < node.aimedLinks()) {
@@ -66,14 +93,15 @@ class Player {
                         node.setLinks(node.links() + increment);
                         neighbor.setLinks(neighbor.links() + increment);
                         relation.setLinks(increment);
-                        debug("B filtered nodes:", getFilteredNodes(nodes));
-                        debug("B: " + relation.asOutputString() + " | " + relation);
+                        debug("3: " + relation.asOutputString() + " | " + relation);
                         displayGrid("", 2, "\n");                       
                         System.out.println(relation.asOutputString());
-                        relations.remove(relation);                        
+                        relations.remove(relation);
+                        if (cleanRelations()) { break; }                     
                     }
                 }
             }
+            cleanRelations();
         } while (!getFilteredNodes(nodes).isEmpty()); // logic
     } // main() --------------------------------------------------------------------------------------------------
 
@@ -203,6 +231,25 @@ class Player {
         return adjacents;        
     } // getAdjacentRelations()
 
+    // Remove relations from relations list that become complete:
+    // whose actual links equals to aimed links for both its nodes
+    // or have double links. Returns true if removal happend
+    static boolean cleanRelations() {
+        if (relations.isEmpty()) { return false; }
+        ArrayList<Relation> removable = new ArrayList<>();
+        for (Relation relation : relations) {
+            Node[] nodeAB = relation.getNodes();
+            if ((nodeAB[0].isComplete() && nodeAB[1].isComplete()) || relation.getLinks() == 2) {
+                removable.add(relation);
+            }
+        }
+        if (!removable.isEmpty()) { 
+            relations.removeAll(removable);
+            return true;
+        }
+        return false;
+    } // cleanRelations()
+
     static void debug(String str) { System.err.println(str); }
     
     // Display a generic arraylist
@@ -214,7 +261,7 @@ class Player {
     // Display grid with 0:actual, 1:aimed, 2:filtered
     // (aimed-actual where actual<>aimed) number of links
     static void displayGrid(String before, int type, String after) {
-        debug(before + (type == 0 ? "actual" : (type == 1 ? "aimed" : "filtered")) + " links:");
+        debug(before + "GRID " + (type == 0 ? "actual" : (type == 1 ? "aimed" : "filtered")) + " links:");
         for (int y = 0; y < height; ++y) {
             String line = "";
             for (int x = 0; x < width; ++x) {
@@ -260,6 +307,7 @@ class Node {
     public int  aimedLinks()             { return aimedLinks; }
     public int  missingLinks()           { return aimedLinks - links; }
     public int  neighbors()              { return neighbors; }
+    public boolean isComplete()          { return links == aimedLinks; }    
     public void setLinks(int actual)     { links = actual; }
     public void setAimedLinks(int aimed) { aimedLinks = aimed; }
     public void setNeighbors(int n)      { neighbors = n; }

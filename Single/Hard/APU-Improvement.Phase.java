@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0920b (Tests 1-5,9,10 passed)
+// APU:Improvement Phase 0922 (no Tests 1-5,9,10 passed)
 import java.util.*;
 
 class Player {
@@ -13,6 +13,8 @@ class Player {
         in.nextLine();
         height = in.nextInt();
         in.nextLine();
+        //HACK! width = 3; height = 2;
+        
         for (int y = 0; y < height; ++y) {                  // Filling the grid
             String line = in.nextLine();                    // Width number of chars, each: 1-8  or '.':
                                                             // node with aimed number of links or no node
@@ -23,6 +25,9 @@ class Player {
                 }
             }
         }
+        //HACK! nodes.clear();
+        //nodes.add(new Node(0, 0, 3));nodes.add(new Node(1, 0, 4));nodes.add(new Node(2, 0, 3));
+        //nodes.add(new Node(0, 1, 3));nodes.add(new Node(1, 1, 4));nodes.add(new Node(2, 1, 3));
 
         displayGrid("\n", 1, "");                               // Display grid of nodes wit aimed number of links
         getRelations(nodes.get(0));                             // Fill relations list
@@ -37,7 +42,7 @@ class Player {
         debug("\noutput:");
         //System.out.println("0 0 2 0 1");                      // Two coords and an int: a node, one of its neighbors,
         //System.out.println("2 0 2 2 1");                      // number of links connecting them
-        do {
+        /*do {
             // 1: Establish double link with all nodes having 2 neighbors and their aimed links = 4
             for (Node node : getFilteredNodes(nodes)) {
                 if (node.neighbors() == 2 && node.aimedLinks() == 4) {
@@ -102,7 +107,32 @@ class Player {
                 }
             }
             cleanRelations();
-        } while (!getFilteredNodes(nodes).isEmpty()); // logic
+        } while (!getFilteredNodes(nodes).isEmpty()); // logic*/
+        
+        do {
+            Node node;
+            if ((node = getSpecifiedNode(8, 4)) != null) {      // 1st incomplete node matching aimed links & neighbors
+                incrementLinksTo(2, node);                      // Increment links of node, all its neighbors
+                                                                // and connections to the specified value
+            } else if ((node = getSpecifiedNode(7, 4)) != null) {
+                incrementLinksTo(1, node);
+            } else if ((node = getSpecifiedNode(6, 3)) != null) {
+                incrementLinksTo(2, node);
+            } else if ((node = getSpecifiedNode(5, 3)) != null) {
+                incrementLinksTo(1, node);
+            } else if ((node = getSpecifiedNode(4, 2)) != null) {
+                incrementLinksTo(2, node);
+            } else if ((node = getSpecifiedNode(3, 2)) != null) {
+                incrementLinksTo(1, node);
+            } else if ((node = getSpecifiedNode(2, 1)) != null) {
+                incrementLinksTo(2, node);
+            } else if ((node = getSpecifiedNode(1, 1)) != null) {
+                incrementLinksTo(1, node);
+            } else {
+                debug("FUCK! specified rules did not catch" +
+                      " the following nodes:", getIncompleteNodes());
+            }
+        } while(!getIncompleteNodes().isEmpty());
     } // main() --------------------------------------------------------------------------------------------------
 
     // Fill relations list recursively from first provided node
@@ -119,8 +149,8 @@ class Player {
         int xNode = node.getX();
         int yNode = node.getY();
         ArrayList<Node> neighbor = new ArrayList<>();
-        if (xNode > 0) {                                    // Check left neighbor
-            for (int x = xNode - 1; x > 0; --x) {
+        if (xNode != 0) {                                   // Check left neighbor
+            for (int x = xNode - 1; x > -1; --x) {
                 if (getNode(x, yNode) != null) {
                     neighbor.add(getNode(x, yNode));
                     break;
@@ -135,8 +165,8 @@ class Player {
                 }
             }
         }
-        if (yNode > 0) {                                    // Check up neighbor
-            for (int y = yNode - 1; y > 0; --y) {
+        if (yNode != 0) {                                   // Check up neighbor
+            for (int y = yNode - 1; y > -1; --y) {
                 if (getNode(xNode, y) != null) {
                     neighbor.add(getNode(xNode, y));
                     break;
@@ -196,6 +226,27 @@ class Player {
         }
         return null;
     } // getFirstRelation()
+
+    // Return first incomplete node matching aimed links & neighbors
+    // or null if no match
+    static Node getSpecifiedNode(int aimed, int neighbors) {
+        return null;
+    } // getSpecifiedNode()
+
+    // Increment links of specified node, all its neighbors
+    // and connections to the specified value
+    static void incrementLinksTo(int inc, Node node) {
+    }
+
+    // Return list of nodes from 'nodes' where actual number of links
+    // less than aimed. Empty list returned if all nodes are complete
+    static ArrayList<Node> getIncompleteNodes() {
+        ArrayList<Node> result = new ArrayList<>();
+        for (Node node : nodes) {
+            if (!node.isComplete()) { result.add(node); }
+        }
+        return result;
+    } // getIncompleteNodes()
     
     // Return list of nodes where actual and aimed number of nodes differ
     static ArrayList<Node> getFilteredNodes(ArrayList<Node> nodeList) {

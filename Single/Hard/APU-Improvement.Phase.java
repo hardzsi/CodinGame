@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0922 (no Tests 1-5,9,10 passed)
+// APU:Improvement Phase 0923 (Tests 2,10 passed)
 import java.util.*;
 
 class Player {
@@ -106,32 +106,33 @@ class Player {
                     }
                 }
             }
-            cleanRelations();
+            cleanRelations2();
         } while (!getFilteredNodes(nodes).isEmpty()); // logic*/
         
         do {
             Node node;
             if ((node = getSpecifiedNode(8, 4)) != null) {      // 1st incomplete node matching aimed links & neighbors
                 incrementLinksTo(2, node);                      // Increment links of node, all its neighbors
-                                                                // and connections to the specified value
+                debug("found 8, 4 in node:" + node.toString()); // and connections to the specified value
             } else if ((node = getSpecifiedNode(7, 4)) != null) {
-                incrementLinksTo(1, node);
+                incrementLinksTo(1, node); debug("found 7, 4 in node:" + node.toString());
             } else if ((node = getSpecifiedNode(6, 3)) != null) {
-                incrementLinksTo(2, node);
+                incrementLinksTo(2, node); debug("found 6, 3 in node:" + node.toString());
             } else if ((node = getSpecifiedNode(5, 3)) != null) {
-                incrementLinksTo(1, node);
+                incrementLinksTo(1, node); debug("found 5, 3 in node:" + node.toString());
             } else if ((node = getSpecifiedNode(4, 2)) != null) {
-                incrementLinksTo(2, node);
+                incrementLinksTo(2, node); debug("found 4, 2 in node:" + node.toString());
             } else if ((node = getSpecifiedNode(3, 2)) != null) {
-                incrementLinksTo(1, node);
+                incrementLinksTo(1, node); debug("found 3, 2 in node:" + node.toString());
             } else if ((node = getSpecifiedNode(2, 1)) != null) {
-                incrementLinksTo(2, node);
+                incrementLinksTo(2, node); debug("found 2, 1 in node:" + node.toString());
             } else if ((node = getSpecifiedNode(1, 1)) != null) {
-                incrementLinksTo(1, node);
+                incrementLinksTo(1, node); debug("found 1, 1 in node:" + node.toString());
             } else {
                 debug("FUCK! specified rules did not catch" +
                       " the following nodes:", getIncompleteNodes());
             }
+            cleanRelations();
         } while(!getIncompleteNodes().isEmpty());
     } // main() --------------------------------------------------------------------------------------------------
 
@@ -230,12 +231,29 @@ class Player {
     // Return first incomplete node matching aimed links & neighbors
     // or null if no match
     static Node getSpecifiedNode(int aimed, int neighbors) {
+        for (Node node : nodes) {
+            if (!node.isComplete() && node.aimedLinks() == aimed &&
+                    node.neighbors() == neighbors) { return node; }
+        }
         return null;
     } // getSpecifiedNode()
 
     // Increment links of specified node, all its neighbors
     // and connections to the specified value
-    static void incrementLinksTo(int inc, Node node) {
+    static void incrementLinksTo(int increment, Node node) {
+        int aimed = node.aimedLinks();
+        int neighbors = node.neighbors();
+        node.setLinks(increment * neighbors);
+        for (Relation relation : getAdjacentRelations(node)) {
+            Node neighbor = relation.getNeighbor(node);
+            int neighborIncrement = increment - neighbor.links();
+            neighbor.setLinks(increment);
+            relation.setLinks(neighborIncrement);
+            debug("rel: " + relation.asOutputString() + " | " + relation);
+            System.out.println(relation.asOutputString());
+            relations.remove(relation);
+        }
+        displayGrid("", 2, "\n");
     }
 
     // Return list of nodes from 'nodes' where actual number of links
@@ -288,13 +306,13 @@ class Player {
     static boolean cleanRelations() {
         if (relations.isEmpty()) { return false; }
         ArrayList<Relation> removable = new ArrayList<>();
-        for (Relation relation : relations) {
+        for (Relation relation : relations) {                       // Collect
             Node[] nodeAB = relation.getNodes();
-            if ((nodeAB[0].isComplete() && nodeAB[1].isComplete()) || relation.getLinks() == 2) {
+            if ((nodeAB[0].isComplete() || nodeAB[1].isComplete()) || relation.getLinks() == 2) {
                 removable.add(relation);
             }
         }
-        if (!removable.isEmpty()) { 
+        if (!removable.isEmpty()) {                                 // Remove
             relations.removeAll(removable);
             return true;
         }

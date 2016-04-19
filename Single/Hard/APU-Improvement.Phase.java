@@ -1,9 +1,9 @@
-// APU:Improvement Phase 0926a (Tests 1-4,9,10 passed) 39%
+// APU:Improvement Phase 0926b (Tests 1-5,9,10 passed) 39%
 import java.util.*;
 
 class Player {
     static int width, height;                                   // Number of grid cells on X and Y axis
-    static ArrayList<Relation> relations =                      // Relations between neighboring nodes 
+    static ArrayList<Relation> relations =                      // Relations between neighboring nodes
         new ArrayList<>();                                      // with no/single/double link between them
     static ArrayList<Node> nodes = new ArrayList<>();           // List of all nodes
 
@@ -15,102 +15,36 @@ class Player {
         in.nextLine();
         //HACK! width = 4; height = 5;
         
-        for (int y = 0; y < height; ++y) {                  // Filling the grid
-            String line = in.nextLine();                    // Width number of chars, each: 1-8  or '.':
-                                                            // node with aimed number of links or no node
+        for (int y = 0; y < height; ++y) {                      // Filling the grid
+            String line = in.nextLine();                        // Width number of chars, each: 1-8  or '.':
+                                                                // node with aimed number of links or no node
             for (int x = 0; x < line.length(); ++x) {
-                if (line.charAt(x) != '.') {                // Add node to nodes list
+                if (line.charAt(x) != '.') {                    // Add node to nodes list
                     nodes.add(new Node(x, y, Character.
                         getNumericValue(line.charAt(x))));
                 }
             }
         }
-        //HACK!
-        /*nodes.clear();
-        nodes.add(new Node(0, 0, 4));nodes.add(new Node(3, 0, 3));
-        nodes.add(new Node(1, 1, 2));nodes.add(new Node(3, 1, 3));
-        nodes.add(new Node(0, 2, 5));nodes.add(new Node(2, 2, 5));nodes.add(new Node(3, 2, 2));
-        nodes.add(new Node(0, 3, 4));
-        nodes.add(new Node(0, 4, 4));nodes.add(new Node(2, 4, 4));
-        */
+        //HACK! nodes.clear();
+        //nodes.add(new Node(0, 0, 4));nodes.add(new Node(3, 0, 3));nodes.add(new Node(1, 1, 2));
+        //nodes.add(new Node(3, 1, 3));nodes.add(new Node(0, 2, 5));nodes.add(new Node(2, 2, 5));
+        //nodes.add(new Node(3, 2, 2));nodes.add(new Node(0, 3, 4));nodes.add(new Node(0, 4, 4));
         displayGrid("\n", 1, "");                               // Display grid of nodes with aimed number of links
         getRelations(nodes.get(0));                             // Fill relations list
-        for (Node node : nodes) {                               // Set nodes' neighbors
-            node.setNeighbors(countNeighbors(node));
+        // Set nodes' neighbors
+        for (Node node : nodes) {
+            int count = 0;                                      // Count number of neighbors of node
+            for (Relation relation : relations) {
+                if (relation.hasNode(node)) { ++count; }
+            }
+            node.setNeighbors(count);
         }
         debug("\nnodes:", nodes);
         debug("\nrelations:", relations);
-        //debug("\nrelations having 1 neighbor:", getAdjacentRelations(1)); // 2 neighbors: getAdjacentRelations(2));
 
         debug("\noutput:");
         //System.out.println("0 0 2 0 1");                      // Two coords and an int: a node, one of its neighbors,
         //System.out.println("2 0 2 2 1");                      // number of links connecting them
-        /*do {
-            // 1: Establish double link with all nodes having 2 neighbors and their aimed links = 4
-            for (Node node : getFilteredNodes(nodes)) {
-                if (node.neighbors() == 2 && node.aimedLinks() == 4) {
-                    ArrayList<Relation> adjRelations = getAdjacentRelations(node);
-                    if (adjRelations.size() != 2) debug("FUCK! How???");
-                    Relation relationA = adjRelations.get(0);
-                    Relation relationB = adjRelations.get(1);
-                    Node neighborA = relationA.getNeighbor(node);
-                    Node neighborB = relationB.getNeighbor(node);
-                    node.setLinks(node.aimedLinks());                    
-                    neighborA.setLinks(neighborA.links() + 2);
-                    neighborB.setLinks(neighborB.links() + 2);
-                    relationA.setLinks(2);
-                    relationB.setLinks(2);
-                    debug("1A: " + relationA.asOutputString() + " | " + relationA);
-                    debug("1B: " + relationB.asOutputString() + " | " + relationB);
-                    displayGrid("", 2, "\n");
-                    System.out.println(relationA.asOutputString());
-                    System.out.println(relationB.asOutputString());
-                    relations.remove(relationA);
-                    relations.remove(relationB);
-                    break;
-                }
-            }
-            cleanRelations();
-            
-            // 2: Establish single or double link (aimed) with all nodes having only one neighbor
-            for (Node node : getFilteredNodes(nodes)) {
-                if (node.neighbors() == 1) {
-                    Relation relation = getFirstRelation(node);
-                    Node neighbor = relation.getNeighbor(node);
-                    int aimed = node.aimedLinks();              // single or double link
-                    node.setLinks(aimed);
-                    neighbor.setLinks(neighbor.links() + aimed);
-                    relation.setLinks(aimed);
-                    debug("2: " + relation.asOutputString() + " | " + relation);
-                    displayGrid("", 2, "\n");
-                    System.out.println(relation.asOutputString());
-                    relations.remove(relation);
-                    break;
-                }
-            }
-            cleanRelations();
-
-            // 3: Establish single link with all neighbors of a node where aimed >= neighbors
-            for (Node node : getFilteredNodes(nodes)) {
-                if(node.aimedLinks() >= node.neighbors() &&
-                            node.links() < node.aimedLinks()) {
-                    for (Relation relation : getAdjacentRelations(node)) {
-                        Node neighbor = relation.getNeighbor(node);
-                        int increment = (int)Math.min(Math.min  // Determine possible link increment, limiting it to 2
-                            (node.missingLinks(), neighbor.missingLinks()), 2);
-                        node.setLinks(node.links() + increment);
-                        neighbor.setLinks(neighbor.links() + increment);
-                        relation.setLinks(increment);
-                        debug("3: " + relation.asOutputString() + " | " + relation);
-                        displayGrid("", 2, "\n");                       
-                        System.out.println(relation.asOutputString());
-                        relations.remove(relation);
-                        if (cleanRelations()) { break; }                     
-                    }
-                }
-            }
-            cleanRelations2();
-        } while (!getFilteredNodes(nodes).isEmpty()); // logic*/
         
         do {
             Node node;
@@ -128,7 +62,7 @@ class Player {
             } else if ((node = getSpecifiedNode(2, 1, 2)) != null) {
                 debug("A: found 2,1,2 (aimed, neighbors, increment) in node:" + node.toString());
                 incrementLinksTo(2, node); 
-            // B: Connect nodes where at least single links possible to all neighbors
+            // B: Connect nodes where at least single link possible to all neighbors
             } else if ((node = getSpecifiedNode(7, 4, 1)) != null) {
                 debug("B: found 7,4,1 (aimed, neighbors, increment) in node:" + node.toString());
                 incrementLinksTo(1, node);
@@ -138,9 +72,6 @@ class Player {
             } else if ((node = getSpecifiedNode(3, 2, 1)) != null) {
                 debug("B: found 3,2,1 (aimed, neighbors, increment) in node:" + node.toString());
                 incrementLinksTo(1, node);
-            } else if ((node = getSpecifiedNode(2, 2, 1)) != null) {
-                debug("B: found 2,2,1 (aimed, neighbors, increment) in node:" + node.toString());
-                incrementLinksTo(1, node); 
             } else if ((node = getSpecifiedNode(1, 1, 1)) != null) {
                 debug("B: found 1,1,1 (aimed, neighbors, increment) in node:" + node.toString());
                 incrementLinksTo(1, node); 
@@ -182,7 +113,7 @@ class Player {
 
     // Fill relations list recursively from first provided node
     static void getRelations(Node node) {
-        for (Node neighbor : getNeighbors(node)) {
+        for (Node neighbor : countNeighbors(node)) {
             if (addNewRelation(new Relation(node, neighbor))) {
                 getRelations(neighbor);
             }
@@ -190,11 +121,11 @@ class Player {
     } // getRelations()
 
     // Return list of nodes that may link to provided node
-    static ArrayList<Node> getNeighbors(Node node) {
+    static ArrayList<Node> countNeighbors(Node node) {
         int xNode = node.getX();
         int yNode = node.getY();
         ArrayList<Node> neighbor = new ArrayList<>();
-        if (xNode != 0) {                                   // Check left neighbor
+        if (xNode != 0) {                                       // Check left neighbor
             for (int x = xNode - 1; x > -1; --x) {
                 if (getNode(x, yNode) != null) {
                     neighbor.add(getNode(x, yNode));
@@ -202,7 +133,7 @@ class Player {
                 }
             }
         }
-        if (xNode < width - 1) {                            // Check right neighbor
+        if (xNode < width - 1) {                                // Check right neighbor
             for (int x = xNode + 1; x < width; ++x) {
                 if (getNode(x, yNode) != null) {
                     neighbor.add(getNode(x, yNode));
@@ -210,7 +141,7 @@ class Player {
                 }
             }
         }
-        if (yNode != 0) {                                   // Check up neighbor
+        if (yNode != 0) {                                       // Check up neighbor
             for (int y = yNode - 1; y > -1; --y) {
                 if (getNode(xNode, y) != null) {
                     neighbor.add(getNode(xNode, y));
@@ -218,7 +149,7 @@ class Player {
                 }
             }
         }
-        if (yNode < height - 1) {                           // Check down neighbor
+        if (yNode < height - 1) {                               // Check down neighbor
             for (int y = yNode + 1; y < height; ++y) {
                 if (getNode(xNode, y) != null) {
                     neighbor.add(getNode(xNode, y));
@@ -227,7 +158,7 @@ class Player {
             }
         }
         return neighbor;
-    } // getNeighbors()
+    } // countNeighbors()
 
     // Return node from nodes list that has same coordinates
     // as the provided ones. Return null if not found
@@ -254,15 +185,6 @@ class Player {
         return !found;
     } // addNewRelation()
 
-    // Count number of neighbors of a node from its relations
-    static int countNeighbors(Node node) {
-        int count = 0;
-        for (Relation relation : relations) {
-            if (relation.hasNode(node)) { ++count; }
-        }
-        return count;
-    } // countNeighbors()
-
     // Return first relation from relations list
     // that contains node or null if node not found
     static Relation getFirstRelation(Node node) {
@@ -286,32 +208,25 @@ class Player {
         return null;
     } // getSpecifiedNode()
 
-    // Return incomplete relations of node that have less links
-    // than increment -- or empty list if not found such ones
-    static ArrayList<Relation> getSpecifiedRelations(Node node, int increment) {
-        ArrayList<Relation> result = new ArrayList<>();
-        for (Relation relation : relations) {
-            if (!relation.isComplete() && relation.hasNode(node) &&
-                (relation.getLinks() < increment)) {
-                result.add(relation);
-            }
-        }
-        return result;
-    } // getSpecifiedRelations()
-
     // Increment links of specified node, all its neighbors
     // and connections to the specified value
     static void incrementLinksTo(int increment, Node node) {
-        // NOTE: put getSpecifiedRelations() method here if no other uses!
-        ArrayList<Relation> specifiedRelations =
-            getSpecifiedRelations(node, increment);
+        // Determine incomplete relations of node that have less links than increment
+        // NOTE: specifiedRelations list remains empty if not found such ones
+        ArrayList<Relation> specifiedRelations = new ArrayList<>();
+        for (Relation relation : relations) {
+            if (!relation.isComplete() && relation.hasNode(node) &&
+                (relation.getLinks() < increment)) {
+                specifiedRelations.add(relation);
+            }
+        }
         debug("relations before increment:", specifiedRelations);
         node.setLinks(node.links() + (specifiedRelations.size() * increment));
         for (Relation relation : specifiedRelations) {
             Node neighbor = relation.getNeighbor(node);
             neighbor.setLinks(neighbor.links() + increment);
-            relation.setLinks(increment - relation.getLinks());             // Incrementing just 1 if relation
-                                                                            // already has a single link
+            relation.setLinks(increment - relation.getLinks()); // Incrementing just 1 if relation
+                                                                // already has a single link
             debug("A|B out:" + relation.asOutputString());
             System.out.println(relation.asOutputString());
             relation.setLinks(increment);
@@ -330,58 +245,16 @@ class Player {
         return result;
     } // getIncompleteNodes()
 
-    // Return incomplete relations from 'relations'
-    // or empty list if not found such ones
-    static ArrayList<Relation> getIncompleteRelations() {
-        ArrayList<Relation> result = new ArrayList<>();
-        for (Relation relation : relations) {
-            if (!relation.isComplete()) { result.add(relation); }
-        }
-        return result;
-    } // getIncompleteRelations()
-
     // Return incomplete relations of node or empty list if none found
     static ArrayList<Relation> getIncompleteRelationsOf(Node node) {
         ArrayList<Relation> result = new ArrayList<>();
-        for (Relation relation : getIncompleteRelations()) {
-            if (relation.hasNode(node)) { result.add(relation); }
+        for (Relation relation : relations) {
+            if (!relation.isComplete() && relation.hasNode(node)) {
+                result.add(relation);
+            }
         }
         return result;        
     } // getIncompleteRelationsOf()
-    
-    // Return list of nodes where actual and aimed number of nodes differ
-    static ArrayList<Node> getFilteredNodes(ArrayList<Node> nodeList) {
-        ArrayList<Node> result = new ArrayList<>();
-        for (Node node : nodeList) {
-            if (node.links() != node.aimedLinks()) {
-                result.add(node);
-            }
-        }
-        return result;
-    } // getFilteredNodes()
-    
-    // Return relations from relations list that
-    // has a node with num number of neighbors
-    static ArrayList<Relation> getAdjacentRelations(int num) {
-        ArrayList<Relation> adjacents = new ArrayList<>();
-        for (Relation relation : relations) {
-            Node[] nodeAB = relation.getNodes();
-            if (nodeAB[0].neighbors() == num || nodeAB[1].neighbors() == num) {
-                adjacents.add(relation);
-            }
-        }
-        return adjacents;
-    } // getAdjacentRelations()
-
-    // Return all relations from relations list that contains node,
-    // returned list therefore contains all adjacents of node
-    static ArrayList<Relation> getAdjacentRelations(Node node) {
-        ArrayList<Relation> adjacents = new ArrayList<>();
-        for (Relation relation : relations) {
-            if (relation.hasNode(node)) { adjacents.add(relation); }
-        }
-        return adjacents;        
-    } // getAdjacentRelations()
 
     // Return incomplete nodes from 'nodes' that only one
     // incomplete relation left -- or empty list if no such
@@ -389,9 +262,11 @@ class Player {
         ArrayList<Node> result = new ArrayList<>();
         for (Node node : nodes) {
             if (!node.isComplete()) {
-                if (getAdjacentRelations(node).size() == 1) {
-                    result.add(node);
+                int count = 0;                                  // Counting all relations that contains node
+                for (Relation relation : relations) {
+                    if (relation.hasNode(node)) { ++count; }
                 }
+                if (count == 1) { result.add(node); }
             }
         }
         return result;
@@ -416,7 +291,7 @@ class Player {
     static void debug(String str) { System.err.println(str); }
     
     // Display a generic arraylist
-    static <T> void debug(String str, ArrayList<T> list) { 
+    static <T> void debug(String str, ArrayList<T> list) {
         System.err.println(str);
         for (T element : list) { debug(element.toString()); }
     } // debug()
@@ -424,7 +299,8 @@ class Player {
     // Display grid with 0:actual, 1:aimed, 2:filtered
     // (aimed-actual where actual<>aimed) number of links
     static void displayGrid(String before, int type, String after) {
-        debug(before + "GRID " + (type == 0 ? "actual" : (type == 1 ? "aimed" : "filtered")) + " links:");
+        debug(before + "GRID " + (type == 0 ? "actual" :
+            (type == 1 ? "aimed" : "filtered")) + " links:");
         for (int y = 0; y < height; ++y) {
             String line = "";
             for (int x = 0; x < width; ++x) {
@@ -434,7 +310,8 @@ class Player {
                 } else {
                     int actual = node.links();
                     int aimed  = node.aimedLinks();
-                    line += type == 0 ? actual : (type == 1 ? aimed : aimed - actual);
+                    line += type == 0 ? actual :
+                        (type == 1 ? aimed : aimed - actual);
                 }
             }
             debug(line);

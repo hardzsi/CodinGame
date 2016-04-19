@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0925b (Tests 1-4,9,10 passed) 39%
+// APU:Improvement Phase 0926a (Tests 1-4,9,10 passed) 39%
 import java.util.*;
 
 class Player {
@@ -13,7 +13,7 @@ class Player {
         in.nextLine();
         height = in.nextInt();
         in.nextLine();
-        //HACK! width = 3; height = 2;
+        //HACK! width = 4; height = 5;
         
         for (int y = 0; y < height; ++y) {                  // Filling the grid
             String line = in.nextLine();                    // Width number of chars, each: 1-8  or '.':
@@ -25,11 +25,15 @@ class Player {
                 }
             }
         }
-        //HACK! nodes.clear();
-        //nodes.add(new Node(0, 0, 3));nodes.add(new Node(1, 0, 4));nodes.add(new Node(2, 0, 3));
-        //nodes.add(new Node(0, 1, 3));nodes.add(new Node(1, 1, 4));nodes.add(new Node(2, 1, 3));
-
-        displayGrid("\n", 1, "");                               // Display grid of nodes wit aimed number of links
+        //HACK!
+        /*nodes.clear();
+        nodes.add(new Node(0, 0, 4));nodes.add(new Node(3, 0, 3));
+        nodes.add(new Node(1, 1, 2));nodes.add(new Node(3, 1, 3));
+        nodes.add(new Node(0, 2, 5));nodes.add(new Node(2, 2, 5));nodes.add(new Node(3, 2, 2));
+        nodes.add(new Node(0, 3, 4));
+        nodes.add(new Node(0, 4, 4));nodes.add(new Node(2, 4, 4));
+        */
+        displayGrid("\n", 1, "");                               // Display grid of nodes with aimed number of links
         getRelations(nodes.get(0));                             // Fill relations list
         for (Node node : nodes) {                               // Set nodes' neighbors
             node.setNeighbors(countNeighbors(node));
@@ -150,7 +154,7 @@ class Player {
                 node.setLinks(node.aimedLinks());
                 relation.setLinks(increment);
                 debug("C out:" + relation.asOutputString());
-                System.out.println(relation.asOutputString());
+                //System.out.println(relation.asOutputString());
                 relation.setLinks(relationLinks + increment);
             // D: Connect the rest
             }*/ else {
@@ -299,18 +303,20 @@ class Player {
     // and connections to the specified value
     static void incrementLinksTo(int increment, Node node) {
         // NOTE: put getSpecifiedRelations() method here if no other uses!
-        ArrayList<Relation> specifiedRelations = getSpecifiedRelations(node, increment);
-        debug("relations to increment:", specifiedRelations);
-        node.setLinks(node.neighbors() * increment);
+        ArrayList<Relation> specifiedRelations =
+            getSpecifiedRelations(node, increment);
+        debug("relations before increment:", specifiedRelations);
+        node.setLinks(node.links() + (specifiedRelations.size() * increment));
         for (Relation relation : specifiedRelations) {
             Node neighbor = relation.getNeighbor(node);
             neighbor.setLinks(neighbor.links() + increment);
             relation.setLinks(increment - relation.getLinks());             // Incrementing just 1 if relation
                                                                             // already has a single link
-            debug("out:" + relation.asOutputString());
+            debug("A|B out:" + relation.asOutputString());
             System.out.println(relation.asOutputString());
             relation.setLinks(increment);
         }
+        debug("relations after increment:", specifiedRelations);
         displayGrid("", 2, "\n");
     } // incrementLinksTo()
 

@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1008a (Tests 1-7,9,10 passed) 39%
+// APU:Improvement Phase 1009a (Tests 1-7,9,10 passed) 39%
 import java.util.*;
 
 class Player {
@@ -40,6 +40,7 @@ class Player {
         collectRelations(nodes.get(0));                         // Fill relations list collecting relations recursively
         initNodeNeighbors();                                    // Set neighbors for all nodes
         //debug("\nnodes:", nodes); debug("");
+        //debug("crossable relations:"); for (Relation rel : relations) {if (rel.isCrossable()) {debug(rel.toString());}}
 
         // ########################################### Logic ##########################################
         // ############################################################################################
@@ -143,6 +144,8 @@ class Player {
                 } else {
                     debug("C does NOT connect, crossing found for " + relation.toString());
                 }
+            } else {
+                debug("single incomplete relation nodes is empty");
             }
             if (connect) { cleanRelations(); }
         } while (connect);                                      // Until connection ocured

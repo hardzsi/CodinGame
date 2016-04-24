@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0930b (Tests 1-7,9,10 passed /6,7,9 with luck/) 47%
+// APU:Improvement Phase 1001a (Tests 1-7,9,10 passed /6,7,9 with luck/) 47%
 import java.util.*;
 
 class Player {
@@ -16,7 +16,7 @@ class Player {
         in.nextLine();
         //HACK! (Intermediate1) width = 5; height = 7;
         
-        for (int y = 0; y < height; ++y) {                      // Filling the grid
+        for (int y = 0; y < height; ++y) {                      // Fill nodes list
             String line = in.nextLine();                        // Width number of chars, each: 1-8  or '.':
                                                                 // node with aimed number of links or no node
             for (int x = 0; x < line.length(); ++x) {
@@ -53,9 +53,9 @@ class Player {
         // Conserve nodes, relations and output to be able
         // to revert those to current state if needed
         String outputTemp = output.toString();
-        ArrayList<Node> nodesTemp = copyNodes(nodes);
+        //ArrayList<Node> nodesTemp = copyNodes(nodes);
         ArrayList<Relation> relationsTemp = copyRelations(relations);         
-        //debug("# Conserved state:");        
+        //debug("# Conserved state:");
         //debug("outputTemp:\n" + outputTemp);
         //debug("nodesTemp:", nodesTemp);
         //debug("\nrelationsTemp:", relationsTemp);
@@ -63,10 +63,10 @@ class Player {
             if (hasIncompleteNodes()) {                         // We have D level connections...
                 debug("### We have D level connections...");
                 // Revert nodes, relations and output
-                /*output.setLength(0); output.append(outputTemp);
-                nodes.clear(); nodes = copyNodes(nodesTemp);
-                relations.clear(); relations = copyRelations(relationsTemp);*/
-                //debug("# Revert state:");        
+                output.setLength(0); output.append(outputTemp);
+                //nodes = copyNodes(nodesTemp);
+                relations = copyRelations(relationsTemp);
+                //debug("# Revert state:");
                 //debug("output:\n" + output.toString());
                 //debug("nodes:", nodes);
                 //debug("\nrelations:", relations);
@@ -77,12 +77,11 @@ class Player {
                 } else {
                     debug("FUCK!!! There are no more nodes to check");
                 }
-                debug("D incomplete relations of node:" + node.toString(), getIncompleteRelationsOf(node));
+                debug("incomplete relations of node:" + node.toString(), getIncompleteRelationsOf(node));
                
-                debug("D connect node:" + node.toString());
-                connectDlevel(node);
-                connectClevels();
-                displayGrid("", 2, "\n");               
+                connectDlevel(node);                            // Complete first incomplete relation of node
+                connectClevels();                               // Establish new C level connections
+                if (hasIncompleteNodes()) { debug("# Try again with another..."); }
             } else {
                 break;
             }
@@ -130,6 +129,7 @@ class Player {
     // C: Establish actual C level connections - connect
     // those nodes that only one incomplete relation left    
     static void connectClevels() {
+        debug("\n# Entered C");
         boolean connect;
         do {
             connect = false;
@@ -158,27 +158,34 @@ class Player {
     // Complete first incomplete relation of node
     // by connecting it with maximum number of links
     static void connectDlevel(Node node) {
+        debug("D connect node:" + node.toString());
         Relation relation = getFirstRelation(node);
         if (!relation.isComplete()) {
             Node neighbor = relation.getNeighbor(node);
             int relationLinks = relation.getLinks();
             int increment = (int)Math.min(Math.min  // Determine possible link increment,limiting it to 2
                 (node.missingLinks(), neighbor.missingLinks()), 2);
+            debug("increment:" + increment + ", node.links():" + node.links() + ", neighbor.links():" + neighbor.links());
             node.setLinks(node.links() + increment);
+            debug("node now after set:" + node.toString());
             neighbor.setLinks(neighbor.links() + increment);
             relation.setLinks(increment);           // One of its nodes become complete, so does relation
             debug("D out:" + relation.asOutputString());
             output.append(relation.asOutputString()).append("\n");
             relation.setLinks(relationLinks + increment); // Should be complete and removed at the end
+            debug("D relation after:\n" + relation.toString());
+            debug("node now:" + node.toString());
+            displayGrid("", 2, "\n");
+            cleanRelations();
         }     
-    } // connectDlevel
+    } // connectDlevel()
     
     // Return first non-checked node with one missing link --- or null if no such
     static Node getFirstMissingLinkNode(ArrayList<Node> checked) {
         Node result = null;
         for (Node node : getIncompleteNodes()) {
             if (node.missingLinks() == 1 && !checked.contains(node)) { 
-                debug("D found first non-checked node with one missing link:" + node.toString());                
+                debug("found first non-checked node with one missing link:" + node.toString());                
                 result = node;
                 break;
             }
@@ -468,6 +475,8 @@ class Relation implements Comparable<Relation> {
 
     Relation(Relation orig) {                                   // Copy constructor
         Node[] nodeAB = orig.getNodes();
+        //nodeA = new Node(nodeAB[0]);
+        //nodeB = new Node(nodeAB[1]);
         nodeA = nodeAB[0];
         nodeB = nodeAB[1];
         links = orig.getLinks();

@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1011b (Tests 1-7,9,10 passed) 54%
+// APU:Improvement Phase 1011c (Tests 1-7,9,10 passed) 54%
 import java.util.*;
 
 class Player {
@@ -46,6 +46,7 @@ class Player {
         connectABlevels();                                      // Establish level A and B connections (run once)
         displayGrid("", 2, "\n");
         if (hasIncompleteNodes()) { debug("C level"); connectClevels(); } // Establish C level connections if needed
+     
         // Conserve lists for reverting their states if necessary
         debug(">> conserving state of nodes,relations and output");
         String outputClone = output.toString();
@@ -53,7 +54,6 @@ class Player {
         ArrayList<Relation> relationsClone = copyRelations(relations, nodesClone);
 
         ArrayList<Node> checked = new ArrayList<>();            // Store nodes with missing links that were already checked
-        //ArrayList<Node> checkables = getIncompleteNodes();
         while (true) {
             if (hasIncompleteNodes()) {                         // We should use a D level connection
                 debug("\nNEW ROUND...");
@@ -64,35 +64,20 @@ class Player {
                 nodes = copyNodes(nodesClone);
                 relations = copyRelations(relationsClone, nodes);
 
-                //debug("checkables:", checkables);               // Incomplete nodes = those having missing links
                 //debug("checked:"); for (Node c : checked) { debug(c.toString()); }
-                Node node = getFirstMissingLinkNode(checked);   // Pick first non-checked node with one missing link
-                if (node != null) {
-                    checked.add(node);                          // Add to checked, so next time we won't check it
-                } else {
-                    node = getFirstMissingLinksNode(checked);   // Pick first non-checked node with two missing links
-                    if (node != null) {
-                        checked.add(node);
-                    } else {
-                        output.append("FUCK!!! There are no more nodes to check"); break;
-                    }
-                }
-                /*Node checkNode = null;
-                for (int missing = 1; missing < 8 && checkNode == null; ++missing) {
-                    for (Node node : checkables) {
-                        if (node.missingLinks() == missing) {
-                            checkNode = node;
-                            checkables.remove(node);
+                Node node = null;
+                for (int missing = 1; missing < 8 && node == null; ++missing) {
+                    for (Node n : getIncompleteNodes()) {
+                        if (n.missingLinks() == missing && !checked.contains(n)) {
+                            node = n;
+                            debug("found first non-checked node with " + missing + " missing link" +
+                                    (missing > 1 ? "s:" : ":") + node);
+                            checked.add(node);
                             break;
                         }
                     }
                 }
-                if (checkNode == null || checkables.isEmpty()) {
-                    output.append("FUCK!!! There are no more nodes to check"); break;
-                } else {
-                    debug("checkNode:" + checkNode);
-                }*/
-                //debug("node:" + node);
+                if (node == null) { output.append("FUCK!!! There are no more nodes to check"); break; }
                 debug("D level"); connectDlevel(node);          // Complete first incomplete relation of node
                 debug("C level"); connectClevels();             // Establish new C level connections
                 if (hasIncompleteNodes()) { debug("incomplete nodes remained - try again with another..."); }
@@ -113,10 +98,8 @@ class Player {
             if (!getSingleIncompleteRelationNodes().isEmpty()) {
                 Node node =
                     getSingleIncompleteRelationNodes().get(0);  // Pick first node
-                //debug("one incomplete relationed node:" + node);
                 Relation relation =
                     getIncompleteRelationsOf(node).get(0);      // Should be only one
-                //debug("checking " + relation);
                 if (!crossAlink(relation)) {                    // Connect if relation does NOT cross a link
                     debug("connecting non-crossing " + relation);
                     Node neighbor = relation.getNeighbor(node);
@@ -143,10 +126,8 @@ class Player {
     // Complete first incomplete relation of node
     // by connecting it with maximum number of links
     static void connectDlevel(Node node) {
-        //debug("connecting node:" + node);
         Relation relation = getFirstIncompleteRelation(node);   // this may be faster than getIncompleteRelationsOf()...
         //Relation relation = getIncompleteRelationsOf(node).get(0);
-        //debug("checking " + relation);
         if (!crossAlink(relation)) {                            // Connect if relation does NOT cross a link
             debug("connecting non-crossing " + relation);
             Node neighbor = relation.getNeighbor(node);
@@ -254,32 +235,6 @@ class Player {
             output.append(relation.asOutputString()).append("\n");
             relation.setLinks(increment);
         }
-    }
-
-    // Return first non-checked node with one missing link - or null if no such
-    static Node getFirstMissingLinkNode(ArrayList<Node> checked) {
-        Node result = null;
-        for (Node node : getIncompleteNodes()) {
-            if (node.missingLinks() == 1 && !checked.contains(node)) {
-                debug("found first non-checked node with one missing link:" + node);
-                result = node;
-                break;
-            }
-        }
-        return result;
-    }
-
-    // Return first non-checked node with two missing links - or null if no such
-    static Node getFirstMissingLinksNode(ArrayList<Node> checked) {
-        Node result = null;
-        for (Node node : getIncompleteNodes()) {
-            if (node.missingLinks() == 2 && !checked.contains(node)) {
-                debug("found first non-checked node with two missing links:" + node);
-                result = node;
-                break;
-            }
-        }
-        return result;
     }
 
     // Return first incomplete relation from 'relations'

@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0928b (Tests 1-5,7,9,10 passed /7,9 with luck/) 47%
+// APU:Improvement Phase 0929a (Tests 1-5,7,9,10 passed /7,9 with luck/) 47%
 import java.util.*;
 
 class Player {
@@ -32,7 +32,7 @@ class Player {
         nodes.add(new Node(2, 3, 1));nodes.add(new Node(1, 4, 5));nodes.add(new Node(3, 4, 2));
         nodes.add(new Node(0, 5, 1));nodes.add(new Node(1, 6, 3));nodes.add(new Node(4, 6, 2));*/
         displayGrid("\n", 1, "");                               // Display grid of nodes with aimed number of links
-        getRelations(nodes.get(0));                             // Fill relations list
+        collectRelations(nodes.get(0));                         // Fill relations list collecting relations recursively
         // Set nodes' neighbors
         for (Node node : nodes) {
             int count = 0;                                      // Count number of neighbors of node
@@ -50,10 +50,29 @@ class Player {
 
         // Logic
         connectABlevels();                                      // Establish all level A and B connections (run once)        
+        ArrayList<Node> checked = new ArrayList<>();            // Nodes with one missing links that were checked yet
+        StringBuffer output = new StringBuffer();               // Output lines leading to solution
         do {
             connectClevels();                                   // Establish actual C level connections
-            
             if (!getIncompleteNodes().isEmpty()) {
+                // Get first non-checked node having one missing link
+                Node check = null;
+                for (Node node : getOneMissingLinkNodes()) {    // Pick first non-checked node with one missing link
+                    debug("D - first node with one missing link:" + node.toString());
+                    if (!checked.contains(node)) {
+                        checked.add(node);                      // Add to checked, so next time we won't check it
+                        check = node;
+                        break;
+                    }
+                }
+                ArrayList<Relation> checkRelations = getIncompleteRelationsOf(check);
+                debug("incomplete relations of node:" + check.toString(), checkRelations);
+                output.setLength(0);
+                ArrayList<Node> nodesTemp = copyNodes(nodes);
+                ArrayList<Relation> relationsTemp = copyRelations(relations);                
+                
+                
+                
                 debug("D - no above rules matched these nodes:", getIncompleteNodes());
                 for (Node nd : getIncompleteNodes()) {
                     if(nd.aimedLinks() >= nd.neighbors()) {
@@ -77,6 +96,16 @@ class Player {
             //cleanRelations();
         } while(!getIncompleteNodes().isEmpty());
     } // main() --------------------------------------------------------------------------------------------------
+
+    // Return those incomplete nodes that has only one
+    // missing link -- or empty list if no such
+    static ArrayList<Node> getOneMissingLinkNodes() {
+        ArrayList<Node> result = new ArrayList<>();
+        for (Node node : getIncompleteNodes()) {
+            if (node.missingLinks() == 1) { result.add(node); }
+        }
+        return result;
+    } // getOneMissingLinkNodes()
 
     static ArrayList<Node> copyNodes(ArrayList<Node> orig) {
         ArrayList<Node> copied = new ArrayList<>(orig.size());
@@ -120,7 +149,6 @@ class Player {
                 incrementLinksTo(1, node); connect = true;
             }
             if (connect) { displayGrid("", 2, "\n"); }
-            cleanRelations();
         } while (connect);                                      // Until connection ocured
     } // connectABlevels()
 
@@ -146,8 +174,8 @@ class Player {
                 System.out.println(relation.asOutputString());
                 relation.setLinks(relationLinks + increment);   // This should be complete and removed at the end
                 connect = true;
+                displayGrid("", 2, "\n");
             }
-            if (connect) { displayGrid("", 2, "\n"); }
             cleanRelations();
         } while (connect);                                      // Until connection ocured
     } // connectClevels()
@@ -178,16 +206,17 @@ class Player {
             System.out.println(relation.asOutputString());
             relation.setLinks(increment);
         }
+        cleanRelations();
     } // incrementLinksTo()
 
     // Fill relations list recursively from first provided node
-    static void getRelations(Node node) {
+    static void collectRelations(Node node) {
         for (Node neighbor : countNeighbors(node)) {
             if (addNewRelation(new Relation(node, neighbor))) {
-                getRelations(neighbor);
+                collectRelations(neighbor);
             }
         }
-    } // getRelations()
+    } // collectRelations()
 
     // Return list of nodes that may link to provided node
     static ArrayList<Node> countNeighbors(Node node) {

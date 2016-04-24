@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1011d (Tests 1-7,9,10 passed) 54%
+// APU:Improvement Phase 1012a (Tests 1-7,9,10 passed) 54%
 import java.util.*;
 
 class Player {
@@ -25,30 +25,24 @@ class Player {
                 }
             }
         }
-        //HACK! (Intermediate1) 
-        /*gridXY[0]=5; gridXY[1]=7; nodes.clear();
-        nodes.add(new Node(0,0,2));nodes.add(new Node(3,0,2));nodes.add(new Node(1,1,3));nodes.add(new Node(2,1,2));
-        nodes.add(new Node(4,1,1));nodes.add(new Node(0,3,2));nodes.add(new Node(2,3,1));nodes.add(new Node(1,4,5));
-        nodes.add(new Node(3,4,2));nodes.add(new Node(0,5,1));nodes.add(new Node(1,6,3));nodes.add(new Node(4,6,2));*/
         //HACK! (Intermediate2) 
         /*gridXY[0]=4; gridXY[1]=4; nodes.clear();
         nodes.add(new Node(0,0,2));nodes.add(new Node(0,1,5));nodes.add(new Node(0,3,1));nodes.add(new Node(1,0,4));
         nodes.add(new Node(1,1,7));nodes.add(new Node(1,3,4));nodes.add(new Node(2,2,1));nodes.add(new Node(3,0,3));
         nodes.add(new Node(3,1,3));nodes.add(new Node(3,2,4));nodes.add(new Node(3,3,4));*/
-        displayGrid("\n", 1, "");                               // Display grid of nodes with aimed number of links
+        displayGrid("\n", 1, "\n");                               // Display grid of nodes with aimed number of links
         collectRelations(nodes.get(0));                         // Fill relations list collecting relations recursively
         initNodeNeighbors();                                    // Set neighbors for all nodes
         //debug("\nnodes:", nodes); debug("");
         //debug("crossable relations:"); for (Relation rel : relations) {if (rel.isCrossable()) {debug(rel);}}
 
-        // ########################################### Logic ##########################################
-        // ############################################################################################
+        // ################################################### Logic #####################################################
+        // ###############################################################################################################
         connectABlevels();                                      // Establish level A and B connections (run once)
-        displayGrid("", 2, "\n");
-        if (hasIncompleteNodes()) { debug("C level"); connectClevels(); } // Establish C level connections if needed
-     
+        if (hasIncompleteNodes()) { debug("C level"); connectClevels(false); } // Establish C level connections if needed
+        displayGrid("\n", 2, "\n");     
         // Conserve lists for reverting their states if necessary
-        debug(">> conserving state of nodes,relations and output");
+        debug(hasIncompleteNodes() ? ">> conserving state of nodes,relations and output" : "done!");
         String outputClone = output.toString();
         ArrayList<Node> nodesClone = nodes;
         ArrayList<Relation> relationsClone = relations;
@@ -57,7 +51,6 @@ class Player {
         while (true) {
             if (hasIncompleteNodes()) {                         // We should use a D level connection
                 debug("\nNEW ROUND...");
-                
                 // Revert nodes, relations and output
                 debug("<< reverting state of nodes, relations and output");
                 output.setLength(0); output.append(outputClone);
@@ -72,6 +65,7 @@ class Player {
                             node = n;
                             debug("found first non-checked node with " + missing + " missing link" +
                                     (missing > 1 ? "s:" : ":") + node);
+                            debug("incomplete relations:", getIncompleteRelationsOf(node));
                             checked.add(node);
                             break;
                         }
@@ -79,7 +73,7 @@ class Player {
                 }
                 if (node == null) { output.append("FUCK!!! There are no more nodes to check"); break; }
                 debug("D level"); connectDlevel(node);          // Complete first incomplete relation of node
-                debug("C level"); connectClevels();             // Establish new C level connections
+                debug("C level"); connectClevels(true);         // Establish new C level connections
                 if (hasIncompleteNodes()) { debug("incomplete nodes remained - try again with another..."); }
             } else {
                 break;
@@ -91,7 +85,7 @@ class Player {
 
     // C: Establish actual C level connections - connect
     // those nodes that only one incomplete relation left
-    static void connectClevels() {
+    static void connectClevels(boolean canDisplayGrid) {
         boolean connect;
         do {
             connect = false;
@@ -113,7 +107,7 @@ class Player {
                     output.append(relation.asOutputString()).append("\n");
                     relation.setLinks(relationLinks + increment);// This should be complete and removed at the end
                     connect = true;
-                    displayGrid("", 2, "\n");
+                    if (canDisplayGrid) { displayGrid("", 2, "\n"); }
                 } else {
                     debug("C does NOT connect, crossing found for " + relation);
                 }

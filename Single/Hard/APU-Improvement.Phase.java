@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1001a (Tests 1-7,9,10 passed /6,7,9 with luck/) 47%
+// APU:Improvement Phase 1001b (Tests 1-7,9,10 passed) 39%
 import java.util.*;
 
 class Player {
@@ -52,24 +52,18 @@ class Player {
         if (hasIncompleteNodes()) { connectClevels(); }         // Establish C level connections if needed
         // Conserve nodes, relations and output to be able
         // to revert those to current state if needed
-        String outputTemp = output.toString();
-        //ArrayList<Node> nodesTemp = copyNodes(nodes);
-        ArrayList<Relation> relationsTemp = copyRelations(relations);         
-        //debug("# Conserved state:");
-        //debug("outputTemp:\n" + outputTemp);
-        //debug("nodesTemp:", nodesTemp);
-        //debug("\nrelationsTemp:", relationsTemp);
+        debug("# Conserve state of nodes, relations and output");
+        String outputClone = output.toString();
+        ArrayList<Node> nodesClone = copyNodes(nodes);
+        ArrayList<Relation> relationsClone = copyRelations(relations, nodesClone);
         while (true) {
             if (hasIncompleteNodes()) {                         // We have D level connections...
                 debug("### We have D level connections...");
                 // Revert nodes, relations and output
-                output.setLength(0); output.append(outputTemp);
-                //nodes = copyNodes(nodesTemp);
-                relations = copyRelations(relationsTemp);
-                //debug("# Revert state:");
-                //debug("output:\n" + output.toString());
-                //debug("nodes:", nodes);
-                //debug("\nrelations:", relations);
+                debug("# Revert nodes, relations and output");
+                output.setLength(0); output.append(outputClone);
+                nodes = copyNodes(nodesClone);
+                relations = copyRelations(relationsClone, nodes);
                 
                 Node node = getFirstMissingLinkNode(checked);   // Pick first non-checked node with one missing link
                 if (node != null) {
@@ -85,7 +79,6 @@ class Player {
             } else {
                 break;
             }
-            //cleanRelations();
         }
     
         debug("output:");
@@ -94,8 +87,6 @@ class Player {
         System.out.println(output.toString());
 
     } // main() --------------------------------------------------------------------------------------------------
-
-    static boolean hasIncompleteNodes() { return !getIncompleteNodes().isEmpty(); } 
 
     // A,B: Establish all level A and B connections - this method should run only once
     static void connectABlevels() {
@@ -129,7 +120,6 @@ class Player {
     // C: Establish actual C level connections - connect
     // those nodes that only one incomplete relation left    
     static void connectClevels() {
-        debug("\n# Entered C");
         boolean connect;
         do {
             connect = false;
@@ -165,16 +155,13 @@ class Player {
             int relationLinks = relation.getLinks();
             int increment = (int)Math.min(Math.min  // Determine possible link increment,limiting it to 2
                 (node.missingLinks(), neighbor.missingLinks()), 2);
-            debug("increment:" + increment + ", node.links():" + node.links() + ", neighbor.links():" + neighbor.links());
             node.setLinks(node.links() + increment);
-            debug("node now after set:" + node.toString());
             neighbor.setLinks(neighbor.links() + increment);
             relation.setLinks(increment);           // One of its nodes become complete, so does relation
             debug("D out:" + relation.asOutputString());
             output.append(relation.asOutputString()).append("\n");
             relation.setLinks(relationLinks + increment); // Should be complete and removed at the end
             debug("D relation after:\n" + relation.toString());
-            debug("node now:" + node.toString());
             displayGrid("", 2, "\n");
             cleanRelations();
         }     
@@ -193,6 +180,8 @@ class Player {
         return result;
     } // getFirstMissingLinkNode()
 
+    static boolean hasIncompleteNodes() { return !getIncompleteNodes().isEmpty(); } 
+
     // Deep copy a Node array
     static ArrayList<Node> copyNodes(ArrayList<Node> orig) {
         ArrayList<Node> copied = new ArrayList<>(orig.size());
@@ -203,12 +192,12 @@ class Player {
     } // copyNodes()
 
     // Deep copy a Relation array
-    static ArrayList<Relation> copyRelations(ArrayList<Relation> orig) {
-        ArrayList<Relation> copied = new ArrayList<>(orig.size());
-        for (Relation relation : orig) {
-            copied.add(new Relation(relation));
+    static ArrayList<Relation> copyRelations(ArrayList<Relation> rels, ArrayList<Node> nodeList) {
+        ArrayList<Relation> result = new ArrayList<>(rels.size());
+        for (Relation relation : rels) {
+            result.add(new Relation(relation, nodeList));
         }
-        return copied;
+        return result;
     } // copyRelations()
 
     // Increment links of specified node, all its neighbors
@@ -473,12 +462,11 @@ class Node {
 class Relation implements Comparable<Relation> {
     Relation(Node a, Node b) { nodeA = a; nodeB = b; links=0; } // Constructor
 
-    Relation(Relation orig) {                                   // Copy constructor
+    // Copy constructor - usig nodes in list to create a new relation
+    Relation(Relation orig, ArrayList<Node> nodeList) {         
         Node[] nodeAB = orig.getNodes();
-        //nodeA = new Node(nodeAB[0]);
-        //nodeB = new Node(nodeAB[1]);
-        nodeA = nodeAB[0];
-        nodeB = nodeAB[1];
+        nodeA = nodeList.get(nodeList.indexOf(nodeAB[0]));
+        nodeB = nodeList.get(nodeList.indexOf(nodeAB[1]));
         links = orig.getLinks();
     }
 

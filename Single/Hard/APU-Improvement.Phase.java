@@ -1,8 +1,8 @@
-// APU:Improvement Phase 1006a (Tests 1-7,9,10 passed) 39%
+// APU:Improvement Phase 1006b (Tests 1-7,9,10 passed) 39%
 import java.util.*;
 
 class Player {
-    static int width, height;                                   // Number of grid cells on X and Y axis
+    static int[] gridXY = {0, 0};                               // Number of grid cells on X and Y axis
     static ArrayList<Relation> relations =                      // Relations between neighboring nodes
         new ArrayList<>();                                      // with no/single/double link between them
     static ArrayList<Relation> removed = new ArrayList<>();     // for crossAlink()
@@ -11,14 +11,13 @@ class Player {
 
     public static void main(String args[]) {
         Scanner in = new Scanner(System.in);
-        width = in.nextInt();
+        gridXY[0] = in.nextInt();                               // width
         in.nextLine();
-        height = in.nextInt();
+        gridXY[1] = in.nextInt();                               // height
         in.nextLine();
-        //HACK! (Intermediate1)
-        width = 5; height = 7;
-        
-        /*for (int y = 0; y < height; ++y) {                      // Fill nodes list
+        //HACK! (Intermediate1) gridXY[0] = 5; gridXY[1] = 7;
+
+        for (int y = 0; y < gridXY[1]; ++y) {                   // Fill nodes list
             String line = in.nextLine();                        // Width number of chars, each: 1-8  or '.':
                                                                 // node with aimed number of links or no node
             for (int x = 0; x < line.length(); ++x) {
@@ -27,13 +26,13 @@ class Player {
                         getNumericValue(line.charAt(x))));
                 }
             }
-        }*/
+        }
         //HACK!
-        nodes.clear();
+        /*nodes.clear();
         nodes.add(new Node(0, 0, 2));nodes.add(new Node(3, 0, 2));nodes.add(new Node(1, 1, 3));
         nodes.add(new Node(2, 1, 2));nodes.add(new Node(4, 1, 1));nodes.add(new Node(0, 3, 2));
         nodes.add(new Node(2, 3, 1));nodes.add(new Node(1, 4, 5));nodes.add(new Node(3, 4, 2));
-        nodes.add(new Node(0, 5, 1));nodes.add(new Node(1, 6, 3));nodes.add(new Node(4, 6, 2));
+        nodes.add(new Node(0, 5, 1));nodes.add(new Node(1, 6, 3));nodes.add(new Node(4, 6, 2));*/
         displayGrid("\n", 1, "");                               // Display grid of nodes with aimed number of links
         collectRelations(nodes.get(0));                         // Fill relations list collecting relations recursively
         // Set nodes' neighbors
@@ -177,40 +176,32 @@ class Player {
 
     // Return true if relation crosses a single or double link
     static boolean crossAlink(Relation rel) {
-        if (!canCross(rel)) { return false; }
+        if (!rel.isCrossable(gridXY)) { return false; }
         ArrayList<Relation> checkRelations = new ArrayList<>(relations);
         checkRelations.addAll(removed);
         boolean cross = false;
         Node[] nodeAB = rel.getNodes();
-        int x0AB = nodeAB[0].getX();
-        int x1AB = nodeAB[1].getX();
-        int y0AB = nodeAB[0].getY();
-        int y1AB = nodeAB[1].getY();
-        int directionAB = (x0AB == x1AB) ? 0 : 1;               // 0:vertical 1:horizontal
+        int xA = nodeAB[0].getX(); int xB = nodeAB[1].getX();
+        int yA = nodeAB[0].getY(); int yB = nodeAB[1].getY();
+        int directionAB = rel.isVertical() ? 0 : 1;               // 0:vertical 1:horizontal
         for (Relation relation : checkRelations) {
-            if (canCross(relation)) {
+            if (relation.isCrossable(gridXY)) {
                 Node[] nodeCD = relation.getNodes();
                 int links = relation.getLinks();
-                int x0CD = nodeCD[0].getX();
-                int x1CD = nodeCD[1].getX();
-                int y0CD = nodeCD[0].getY();
-                int y1CD = nodeCD[1].getY();            
-                int directionCD = (x0CD == x1CD) ? 0 : 1;
+                int xC = nodeCD[0].getX(); int xD = nodeCD[1].getX();
+                int yC = nodeCD[0].getY(); int yD = nodeCD[1].getY();            
+                int directionCD = relation.isVertical() ? 0 : 1;
                 // Can cross only if directions differ and relations have links
                 if (!rel.equals(relation) && directionAB != directionCD && links > 0) {              
                     if (directionAB == 0 && directionCD == 1) {     // possible crossing of vertical with horizontal
-                        if ((x0CD < x0AB && x1CD > x0AB) ||
-                            (x0CD > x0AB && x1CD < x0AB)    ) {
-                            if ((y0AB < y0CD && y1AB > y0CD) ||
-                                (y0AB > y0CD && y1AB < y0CD)    ) {
+                        if ((xC < xA && xD > xA) || (xC > xA && xD < xA)) {
+                            if ((yA < yC && yB > yC) || (yA > yC && yB < yC)) {
                                 cross = true;
                             }
                         }
                     } else {                                        // possible crossing of horizontal with vertical
-                        if ((x0AB < x0CD && x1AB > x0CD) ||
-                            (x0AB > x0CD && x1AB < x0CD)    ) {
-                            if ((y0CD < y0AB && y1CD > y0AB) ||
-                                (y0CD > y0AB && y1CD < y0AB)    ) {
+                        if ((xA < xC && xB > xC) || (xA > xC && xB < xC)) {
+                            if ((yC < yA && yD > yA) || (yC > yA && yD < yA)) {
                                 cross = true;
                             }
                         }
@@ -220,25 +211,6 @@ class Player {
         }
         return cross;
     } // crossAlink()
-
-    // Return true if crossing possible for a relation, that
-    // is, when have non-neighboring coords and not at border
-    static boolean canCross(Relation rel) {
-        boolean result = true;
-        Node[] nodeAB = rel.getNodes();
-        int x0AB = nodeAB[0].getX();
-        int x1AB = nodeAB[1].getX();
-        int y0AB = nodeAB[0].getY();
-        int y1AB = nodeAB[1].getY();
-        if (x0AB == x1AB) {                                     // vertical
-            if (x0AB == 0 || x0AB == width - 1) { result = false; }
-            if (Math.abs(y0AB - y1AB) == 1) { result = false; }
-        } else {                                                // horizontal
-            if (y0AB == 0 || y0AB == height - 1) { result = false; }
-            if (Math.abs(x0AB - x1AB) == 1) { result = false; }        
-        }
-        return result;
-    } // canCross()
     
     // Return first non-checked node with one missing link --- or null if no such
     static Node getFirstMissingLinkNode(ArrayList<Node> checked) {
@@ -313,8 +285,8 @@ class Player {
 
     // Return list of nodes that may link to provided node
     static ArrayList<Node> countNeighbors(Node node) {
-        int xNode = node.getX();
-        int yNode = node.getY();
+        int xNode = node.getX(); int yNode = node.getY();
+        int width = gridXY[0];   int height = gridXY[1];
         ArrayList<Node> neighbor = new ArrayList<>();
         if (xNode != 0) {                                       // Check left neighbor
             for (int x = xNode - 1; x > -1; --x) {
@@ -471,9 +443,9 @@ class Player {
     static void displayGrid(String before, int type, String after) {
         debug(before + "GRID " + (type == 0 ? "actual" :
             (type == 1 ? "aimed" : "filtered")) + " links:");
-        for (int y = 0; y < height; ++y) {
+        for (int y = 0; y < gridXY[1]; ++y) {
             String line = "";
-            for (int x = 0; x < width; ++x) {
+            for (int x = 0; x < gridXY[0]; ++x) {
                 Node node = getNode(x, y);
                 if (node == null) {
                     line += type == 0 ? "." : "0";
@@ -541,10 +513,10 @@ class Node {
 // Two relations considered equal _even if_ their nodes are switched
 // Comparision based _only_ on number of actual links
 class Relation implements Comparable<Relation> {
-    Relation(Node a, Node b) { nodeA = a; nodeB = b; links=0; } // Constructor
+    public Relation(Node a, Node b) { nodeA = a; nodeB = b; links=0; } // Constructor
 
     // Copy constructor - usig nodes in list to create a new relation
-    Relation(Relation orig, ArrayList<Node> nodeList) {         
+    public Relation(Relation orig, ArrayList<Node> nodeList) {         
         Node[] nodeAB = orig.getNodes();
         nodeA = nodeList.get(nodeList.indexOf(nodeAB[0]));
         nodeB = nodeList.get(nodeList.indexOf(nodeAB[1]));
@@ -563,7 +535,25 @@ class Relation implements Comparable<Relation> {
         return node.equals(nodeA) || node.equals(nodeB);
     }
     
-    public boolean isComplete() { return nodeA.isComplete() || nodeB.isComplete() || links == 2; }
+    public boolean isComplete()   { return nodeA.isComplete() ||
+                                           nodeB.isComplete() || links == 2; }
+    public boolean isVertical()   { return nodeA.getX() == nodeB.getX(); }
+    public boolean isHorizontal() { return nodeA.getY() == nodeB.getY(); }
+    
+    public boolean isCrossable(int[] gridXY) {                  // Return true if crossing possible for relation;
+                                                                // has non-neighboring coords and not at border
+        int xA = nodeA.getX(); int xB = nodeB.getX();
+        int yA = nodeA.getY(); int yB = nodeB.getY();
+        int width = gridXY[0]; int height = gridXY[1];
+        if (isVertical()) {
+            if (xA > 0 && xA < width - 1 && Math.abs(yA - yB) > 1)
+                    { return true; }
+        } else {
+            if (yA > 0 && yA < height - 1 && Math.abs(xA - xB) > 1)
+                    { return true; }
+        }
+        return false;
+    }
     
     public void setLinks(int actualLinks) { links = actualLinks; }
     

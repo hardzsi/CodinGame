@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0929b (Tests 1-5,7,9,10 passed /7,9 with luck/) 47%
+// APU:Improvement Phase 0929c (Tests 1-5,7,9,10 passed /7,9 with luck/) 47%
 import java.util.*;
 
 class Player {
@@ -42,16 +42,14 @@ class Player {
             }
             node.setNeighbors(count);
         }
-        debug("\nnodes:", nodes);
+        debug("\nnodes:", nodes); debug("");
         //debug("\nrelations:", relations);
 
-        debug("\noutput:");
-        //System.out.println("0 0 2 0 1");                      // Two coords and an int: a node, one of its neighbors,
-        //System.out.println("2 0 2 2 1");                      // number of links connecting them
 
-        // Logic
+
+        // <<<<<<<<<<<<<<<<< Logic >>>>>>>>>>>>>>>>>
         connectABlevels();                                      // Establish all level A and B connections (run once)        
-        ArrayList<Node> checked = new ArrayList<>();            // Nodes with one missing links that were checked yet
+        ArrayList<Node> checked = new ArrayList<>();            // Nodes with one missing links that were already checked
 
         do {
             connectClevels();                                   // Establish actual C level connections
@@ -83,9 +81,11 @@ class Player {
             //cleanRelations();
         } while(!getIncompleteNodes().isEmpty());
     
-        debug("\noutput:");
+        debug("output:");
+        //System.out.println("0 0 2 0 1");                      // Two coords and an int: a node, one of its
+        //System.out.println("2 0 2 2 1");                      // neighbors, number of links connecting them
         System.out.println(output.toString());
-        
+
     } // main() --------------------------------------------------------------------------------------------------
 
     // A,B: Establish all level A and B connections - this method should run only once

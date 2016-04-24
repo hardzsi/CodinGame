@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1009a (Tests 1-7,9,10 passed) 39%
+// APU:Improvement Phase 1010a (Tests 1-7,9,10 passed) 39%
 import java.util.*;
 
 class Player {
@@ -132,7 +132,7 @@ class Player {
                     Node neighbor = relation.getNeighbor(node);
                     int relationLinks = relation.getLinks();
                     int increment = (int)Math.min(Math.min      // Determine possible link increment, limiting it to 2
-                        (node.missingLinks(), neighbor.missingLinks()), 2);
+                        (node.missingLinks(), neighbor.missingLinks()), 2 - relationLinks);
                     node.setLinks(node.links() + increment);
                     neighbor.setLinks(neighbor.links() + increment);
                     relation.setLinks(increment);
@@ -161,7 +161,7 @@ class Player {
             Node neighbor = relation.getNeighbor(node);
             int relationLinks = relation.getLinks();
             int increment = (int)Math.min(Math.min                  // Determine possible link increment,limiting it to 2
-                (node.missingLinks(), neighbor.missingLinks()), 2);
+                (node.missingLinks(), neighbor.missingLinks()), 2 - relationLinks);
             node.setLinks(node.links() + increment);
             neighbor.setLinks(neighbor.links() + increment);
             relation.setLinks(increment);                           // One of its nodes become complete, so does relation

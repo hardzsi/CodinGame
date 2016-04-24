@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1007a (Tests 1-7,9,10 passed) 47%
+// APU:Improvement Phase 1008a (Tests 1-7,9,10 passed) 39%
 import java.util.*;
 
 class Player {
@@ -11,12 +11,11 @@ class Player {
 
     public static void main(String args[]) {
         Scanner in = new Scanner(System.in);
-        gridXY[0] = in.nextInt();                               // width
+        gridXY[0] = in.nextInt();                               // Store width
         in.nextLine();
-        gridXY[1] = in.nextInt();                               // height
+        gridXY[1] = in.nextInt();                               // Store height
         in.nextLine();
-        //HACK! (Intermediate1) gridXY[0] = 5; gridXY[1] = 7;
-
+        // comment out for() to hack...
         for (int y = 0; y < gridXY[1]; ++y) {                   // Fill nodes list
             String line = in.nextLine();                        // Width number of chars, each: 1-8  or '.':
                                                                 // node with aimed number of links or no node
@@ -27,33 +26,31 @@ class Player {
                 }
             }
         }
-        //HACK!
-        /*nodes.clear();
-        nodes.add(new Node(0, 0, 2));nodes.add(new Node(3, 0, 2));nodes.add(new Node(1, 1, 3));
-        nodes.add(new Node(2, 1, 2));nodes.add(new Node(4, 1, 1));nodes.add(new Node(0, 3, 2));
-        nodes.add(new Node(2, 3, 1));nodes.add(new Node(1, 4, 5));nodes.add(new Node(3, 4, 2));
-        nodes.add(new Node(0, 5, 1));nodes.add(new Node(1, 6, 3));nodes.add(new Node(4, 6, 2));*/
+        //HACK! (Intermediate1) 
+        /*gridXY[0]=5; gridXY[1]=7; nodes.clear();
+        nodes.add(new Node(0,0,2));nodes.add(new Node(3,0,2));nodes.add(new Node(1,1,3));nodes.add(new Node(2,1,2));
+        nodes.add(new Node(4,1,1));nodes.add(new Node(0,3,2));nodes.add(new Node(2,3,1));nodes.add(new Node(1,4,5));
+        nodes.add(new Node(3,4,2));nodes.add(new Node(0,5,1));nodes.add(new Node(1,6,3));nodes.add(new Node(4,6,2));*/
+        //HACK! (Intermediate2) 
+        /*gridXY[0]=4; gridXY[1]=4; nodes.clear();
+        nodes.add(new Node(0,0,2));nodes.add(new Node(0,1,5));nodes.add(new Node(0,3,1));nodes.add(new Node(1,0,4));
+        nodes.add(new Node(1,1,7));nodes.add(new Node(1,3,4));nodes.add(new Node(2,2,1));nodes.add(new Node(3,0,3));
+        nodes.add(new Node(3,1,3));nodes.add(new Node(3,2,4));nodes.add(new Node(3,3,4));*/
         displayGrid("\n", 1, "");                               // Display grid of nodes with aimed number of links
         collectRelations(nodes.get(0));                         // Fill relations list collecting relations recursively
-        // Set nodes' neighbors
-        for (Node node : nodes) {
-            int count = 0;                                      // Count number of neighbors of node
-            for (Relation relation : relations) {
-                if (relation.hasNode(node)) { ++count; }
-            }
-            node.setNeighbors(count);
-        }
+        initNodeNeighbors();                                    // Set neighbors for all nodes
         //debug("\nnodes:", nodes); debug("");
 
-        // ---------------<<<<<<<<<<<<<<<<< Logic >>>>>>>>>>>>>>>>>--------------------------
+        // ########################################### Logic ##########################################
+        // ############################################################################################
         ArrayList<Node> checked = new ArrayList<>();            // Nodes with one missing links that were already checked
         connectABlevels();                                      // Establish level A and B connections (run once)
         displayGrid("", 2, "\n");
-        if (hasIncompleteNodes()) { connectClevels(); }         // Establish C level connections if needed
+        if (hasIncompleteNodes()) { debug("C level"); connectClevels(); } // Establish C level connections if needed
         
         // Conserve nodes, relations and output to be able
         // to revert those to current state if needed
-        //debug("\n>> conserving state of nodes, relations and output...\n");
+        debug(">> conserving state of nodes, relations and output...");
         String outputClone = output.toString();
         ArrayList<Node> nodesClone = copyNodes(nodes);
         ArrayList<Relation> relationsClone = copyRelations(relations, nodesClone);
@@ -64,7 +61,7 @@ class Player {
                 debug("D level");
                 
                 // Revert nodes, relations and output
-                debug("<< reverting state of nodes, relations and output...\n");
+                debug("<< reverting state of nodes, relations and output...");
                 output.setLength(0); output.append(outputClone);
                 nodes = copyNodes(nodesClone);
                 relations = copyRelations(relationsClone, nodes);
@@ -115,7 +112,6 @@ class Player {
             } else if ((node = getSpecifiedNode(1, 1, 1)) != null) {
                 incrementLinksTo(1, node); connect = true;
             }
-            //if (connect) { displayGrid("", 2, "\n"); }
         } while (connect);                                      // Until connection ocured
     } // connectABlevels()
 
@@ -156,7 +152,8 @@ class Player {
     // by connecting it with maximum number of links
     static void connectDlevel(Node node) {
         debug("D connect node:" + node.toString());
-        Relation relation = getFirstIncompleteRelation(node);
+        Relation relation = getFirstIncompleteRelation(node);   // this may be faster than getIncompleteRelationsOf()...
+        //Relation relation = getIncompleteRelationsOf(node).get(0);
         if (!crossAlink(relation)) {                            // Connect if relation does NOT cross a link        
             Node neighbor = relation.getNeighbor(node);
             int relationLinks = relation.getLinks();
@@ -168,7 +165,6 @@ class Player {
             debug("D out:" + relation.asOutputString());
             output.append(relation.asOutputString()).append("\n");
             relation.setLinks(relationLinks + increment);           // Should be complete and removed at the end
-            //debug("D relation after:\n" + relation.toString());
             displayGrid("", 2, "\n");
             cleanRelations();
         } else {
@@ -178,7 +174,7 @@ class Player {
 
     // Return true if relation crosses a single or double link
     static boolean crossAlink(Relation rel) {
-        if (!rel.isCrossable(gridXY)) { return false; }
+        if (!rel.isCrossable()) { return false; }
         ArrayList<Relation> checkRelations = new ArrayList<>(relations);
         checkRelations.addAll(removed);
         boolean cross = false;
@@ -187,7 +183,7 @@ class Player {
         int yA = nodeAB[0].getY(); int yB = nodeAB[1].getY();
         int directionAB = rel.isVertical() ? 0 : 1;               // 0:vertical 1:horizontal
         for (Relation relation : checkRelations) {
-            if (relation.isCrossable(gridXY)) {
+            if (relation.isCrossable()) {
                 Node[] nodeCD = relation.getNodes();
                 int links = relation.getLinks();
                 int xC = nodeCD[0].getX(); int xD = nodeCD[1].getX();
@@ -273,13 +269,12 @@ class Player {
             output.append(relation.asOutputString()).append("\n");
             relation.setLinks(increment);
         }
-        //cleanRelations();
     } // incrementLinksTo()
 
     // Fill relations list recursively from first provided node
     static void collectRelations(Node node) {
         for (Node neighbor : countNeighbors(node)) {
-            if (addNewRelation(new Relation(node, neighbor))) {
+            if (addNewRelation(new Relation(node, neighbor, gridXY))) {
                 collectRelations(neighbor);
             }
         }
@@ -405,14 +400,23 @@ class Player {
     static ArrayList<Node> getSingleIncompleteRelationNodes() {
         ArrayList<Node> result = new ArrayList<>();
         for (Node node : getIncompleteNodes()) {
-            int count = 0;
-            for (Relation relation : relations) {           // Counting relations that contains the (incomplete) node
-                if (relation.hasNode(node)) { ++count; }
+            if (getIncompleteRelationsOf(node).size() == 1) {   // Add node only if it has one incomplete relation
+                result.add(node);
             }
-            if (count == 1) { result.add(node); }           // Add node to list only if it has one relation
         }
         return result;
     } // getSingleIncompleteRelationNodes()
+
+    // Initialize neighbors of all nodes by counting & setting those
+    static void initNodeNeighbors() {
+        for (Node node : nodes) {
+            int count = 0;                                          // Count number of neighbors of node
+            for (Relation relation : relations) {
+                if (relation.hasNode(node)) { ++count; }
+            }
+            node.setNeighbors(count);
+        }
+    } // initNodeNeighbors()
 
     // Remove relations from relations list that become complete:
     // whose actual links equals to aimed links for both its nodes
@@ -515,7 +519,23 @@ class Node {
 // Two relations considered equal _even if_ their nodes are switched
 // Comparision based _only_ on number of actual links
 class Relation implements Comparable<Relation> {
-    public Relation(Node a, Node b) { nodeA = a; nodeB = b; links=0; } // Constructor
+    // Constructor
+    public Relation(Node a, Node b, int[] gridXY) {
+        nodeA = a;
+        nodeB = b;
+        links = 0;
+        // Determine if crossable: has non-neighboring coords and not at border
+        crossable = false;
+        int xA = nodeA.getX(); int xB = nodeB.getX();
+        int yA = nodeA.getY(); int yB = nodeB.getY();
+        if (isVertical()) {
+            if (xA > 0 && xA < gridXY[0] - 1 && Math.abs(yA - yB) > 1)
+                    { crossable = true; }
+        } else {
+            if (yA > 0 && yA < gridXY[1] - 1 && Math.abs(xA - xB) > 1)
+                    { crossable = true; }
+        }  
+    } 
 
     // Copy constructor - usig nodes in list to create a new relation
     public Relation(Relation orig, ArrayList<Node> nodeList) {         
@@ -541,21 +561,7 @@ class Relation implements Comparable<Relation> {
                                            nodeB.isComplete() || links == 2; }
     public boolean isVertical()   { return nodeA.getX() == nodeB.getX(); }
     public boolean isHorizontal() { return nodeA.getY() == nodeB.getY(); }
-    
-    public boolean isCrossable(int[] gridXY) {                  // Return true if crossing possible for relation;
-                                                                // has non-neighboring coords and not at border
-        int xA = nodeA.getX(); int xB = nodeB.getX();
-        int yA = nodeA.getY(); int yB = nodeB.getY();
-        int width = gridXY[0]; int height = gridXY[1];
-        if (isVertical()) {
-            if (xA > 0 && xA < width - 1 && Math.abs(yA - yB) > 1)
-                    { return true; }
-        } else {
-            if (yA > 0 && yA < height - 1 && Math.abs(xA - xB) > 1)
-                    { return true; }
-        }
-        return false;
-    }
+    public boolean isCrossable()  { return crossable; }
     
     public void setLinks(int actualLinks) { links = actualLinks; }
     
@@ -585,4 +591,5 @@ class Relation implements Comparable<Relation> {
     private Node nodeA;                                         // Nodes of relation
     private Node nodeB;
     private int links;                                          // Actual links between nodes
+    private boolean crossable;                                  // True if crossing possible for relation
 } // class Relation

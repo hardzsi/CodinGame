@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0930a (Tests 1-7,9,10 passed /6,7,9 with luck/) 5x%
+// APU:Improvement Phase 0930b (Tests 1-7,9,10 passed /6,7,9 with luck/) 47%
 import java.util.*;
 
 class Player {
@@ -50,10 +50,27 @@ class Player {
         ArrayList<Node> checked = new ArrayList<>();            // Nodes with one missing links that were already checked
         connectABlevels();                                      // Establish level A and B connections (run once)
         if (hasIncompleteNodes()) { connectClevels(); }         // Establish C level connections if needed
-        
+        // Conserve nodes, relations and output to be able
+        // to revert those to current state if needed
+        String outputTemp = output.toString();
+        ArrayList<Node> nodesTemp = copyNodes(nodes);
+        ArrayList<Relation> relationsTemp = copyRelations(relations);         
+        //debug("# Conserved state:");        
+        //debug("outputTemp:\n" + outputTemp);
+        //debug("nodesTemp:", nodesTemp);
+        //debug("\nrelationsTemp:", relationsTemp);
         while (true) {
             if (hasIncompleteNodes()) {                         // We have D level connections...
                 debug("### We have D level connections...");
+                // Revert nodes, relations and output
+                /*output.setLength(0); output.append(outputTemp);
+                nodes.clear(); nodes = copyNodes(nodesTemp);
+                relations.clear(); relations = copyRelations(relationsTemp);*/
+                //debug("# Revert state:");        
+                //debug("output:\n" + output.toString());
+                //debug("nodes:", nodes);
+                //debug("\nrelations:", relations);
+                
                 Node node = getFirstMissingLinkNode(checked);   // Pick first non-checked node with one missing link
                 if (node != null) {
                     checked.add(node);                          // Add to checked, so next time we won't check it
@@ -61,11 +78,7 @@ class Player {
                     debug("FUCK!!! There are no more nodes to check");
                 }
                 debug("D incomplete relations of node:" + node.toString(), getIncompleteRelationsOf(node));
-                // Conserve nodes, relations and output to be able
-                // to revert those to current state if needed
-                String outputTemp = new String(output);
-                ArrayList<Node> nodesTemp = copyNodes(nodes);
-                ArrayList<Relation> relationsTemp = copyRelations(relations);                
+               
                 debug("D connect node:" + node.toString());
                 connectDlevel(node);
                 connectClevels();
@@ -159,16 +172,6 @@ class Player {
             relation.setLinks(relationLinks + increment); // Should be complete and removed at the end
         }     
     } // connectDlevel
-
-    /*// Return those incomplete nodes that has only one
-    // missing link -- or empty list if no such
-    static ArrayList<Node> getOneMissingLinkNodes() {
-        ArrayList<Node> result = new ArrayList<>();
-        for (Node node : getIncompleteNodes()) {
-            if (node.missingLinks() == 1) { result.add(node); }
-        }
-        return result;
-    } // getOneMissingLinkNodes()*/
     
     // Return first non-checked node with one missing link --- or null if no such
     static Node getFirstMissingLinkNode(ArrayList<Node> checked) {

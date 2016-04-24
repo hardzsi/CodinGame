@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0927b (Tests 1-5,7,9,10 passed) 47%
+// APU:Improvement Phase 0927c (Tests 1-5,7,9,10 passed) 47%
 import java.util.*;
 
 class Player {
@@ -110,6 +110,22 @@ class Player {
             cleanRelations();
         } while(!getIncompleteNodes().isEmpty());
     } // main() --------------------------------------------------------------------------------------------------
+
+    static ArrayList<Node> copyNodes(ArrayList<Node> orig) {
+        ArrayList<Node> copied = new ArrayList<>(orig.size());
+        for (Node node : orig) {
+            copied.add(new Node(node));
+        }
+        return copied;
+    } // copyNodes()
+
+    static ArrayList<Relation> copyRelations(ArrayList<Relation> orig) {
+        ArrayList<Relation> copied = new ArrayList<>(orig.size());
+        for (Relation relation : orig) {
+            copied.add(new Relation(relation));
+        }
+        return copied;
+    } // copyRelations()
 
     // Increment links of specified node, all its neighbors
     // and connections to the specified value
@@ -324,9 +340,17 @@ class Player {
 // leading to it as well as number of neighbors it can be linked to
 // Two nodes considered equal if their coordinates are the same
 class Node {
-    public Node(int x, int y, int aimed) {
+    public Node(int x, int y, int aimed) {                      // Constructor
         this.x = x; this.y = y;
         aimedLinks = aimed;
+    }
+    
+    public Node(Node orig) {                                    // Copy constructor
+        x =          orig.getX();
+        y =          orig.getY();
+        links =      orig.links();
+        aimedLinks = orig.aimedLinks();
+        neighbors =  orig.neighbors();
     }
     
     @Override public boolean equals(Object other) {
@@ -352,19 +376,25 @@ class Node {
     public void setAimedLinks(int aimed) { aimedLinks = aimed; }
     public void setNeighbors(int n)      { neighbors = n; }
 
-    private int x;                                  // Coordinates of node
+    private int x;                                              // Coordinates of node
     private int y;
-    private int links = 0;                          // Actual number of links
-    private int aimedLinks;                         // Aimed number of links
-    private int neighbors = 0;                      // Number of neighbors
-    //private int[] links = new int[3];               // Actual, maximum and aimed number of links
+    private int links = 0;                                      // Actual number of links
+    private int aimedLinks;                                     // Aimed number of links
+    private int neighbors = 0;                                  // Number of neighbors
 } // class Node
 
 // A relation is a pair of connecting nodes with at most two links
 // Two relations considered equal _even if_ their nodes are switched
 // Comparision based _only_ on number of actual links
 class Relation implements Comparable<Relation> {
-    Relation(Node a, Node b) { nodeA = a; nodeB = b; links = 0; }
+    Relation(Node a, Node b) { nodeA = a; nodeB = b; links=0; } // Constructor
+
+    Relation(Relation orig) {                                   // Copy constructor
+        Node[] nodeAB = orig.getNodes();
+        nodeA = nodeAB[0];
+        nodeB = nodeAB[1];
+        links = orig.getLinks();
+    }
 
     public int getLinks() { return links; }
     
@@ -400,13 +430,12 @@ class Relation implements Comparable<Relation> {
         return false;
     }
 
-    @Override public String toString() {            // "relation nodeA [x|-|=] nodeB" where [] represents number of links
-        return "relation " + nodeA + " " +
-            (links == 0 ? "x" : links == 1 ? "-" : "=") +
-            " " + nodeB;
+    @Override public String toString() {                        // 'relation nodeA [x|-|=] nodeB' where
+        return "relation " + nodeA + " " +                      // [] represents number of links: 0|1|2
+            (links == 0 ? "x" : links == 1 ? "-" : "=") + " " + nodeB;
     }
 
-    private Node nodeA;                             // Nodes of relation
+    private Node nodeA;                                         // Nodes of relation
     private Node nodeB;
-    private int links;                              // Actual links between nodes
+    private int links;                                          // Actual links between nodes
 } // class Relation

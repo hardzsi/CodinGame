@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0927a (Tests 1-5,7,9,10 passed) 47%
+// APU:Improvement Phase 0927b (Tests 1-5,7,9,10 passed) 47%
 import java.util.*;
 
 class Player {
@@ -13,7 +13,7 @@ class Player {
         in.nextLine();
         height = in.nextInt();
         in.nextLine();
-        //HACK! width = 4; height = 5;
+        //HACK! (Intermediate1) width = 5; height = 7;
         
         for (int y = 0; y < height; ++y) {                      // Filling the grid
             String line = in.nextLine();                        // Width number of chars, each: 1-8  or '.':
@@ -25,10 +25,12 @@ class Player {
                 }
             }
         }
-        //HACK! nodes.clear();
-        //nodes.add(new Node(0, 0, 4));nodes.add(new Node(3, 0, 3));nodes.add(new Node(1, 1, 2));
-        //nodes.add(new Node(3, 1, 3));nodes.add(new Node(0, 2, 5));nodes.add(new Node(2, 2, 5));
-        //nodes.add(new Node(3, 2, 2));nodes.add(new Node(0, 3, 4));nodes.add(new Node(0, 4, 4));
+        //HACK!
+        /*nodes.clear();
+        nodes.add(new Node(0, 0, 2));nodes.add(new Node(3, 0, 2));nodes.add(new Node(1, 1, 3));
+        nodes.add(new Node(2, 1, 2));nodes.add(new Node(4, 1, 1));nodes.add(new Node(0, 3, 2));
+        nodes.add(new Node(2, 3, 1));nodes.add(new Node(1, 4, 5));nodes.add(new Node(3, 4, 2));
+        nodes.add(new Node(0, 5, 1));nodes.add(new Node(1, 6, 3));nodes.add(new Node(4, 6, 2));*/
         displayGrid("\n", 1, "");                               // Display grid of nodes with aimed number of links
         getRelations(nodes.get(0));                             // Fill relations list
         // Set nodes' neighbors
@@ -73,9 +75,8 @@ class Player {
                 Relation relation =
                     getIncompleteRelationsOf(node).get(0);          // Should be only one
                 Node neighbor = relation.getNeighbor(node);
-                debug("relation before: " + relation);
                 int relationLinks = relation.getLinks();
-                int increment = (int)Math.min(Math.min              // Determine possible link increment, limiting it to 2
+                int increment = (int)Math.min(Math.min              // Determine possible link increment,limiting it to 2
                     (node.missingLinks(), neighbor.missingLinks()), 2);
                 node.setLinks(node.links() + increment);
                 neighbor.setLinks(neighbor.links() + increment);
@@ -83,7 +84,6 @@ class Player {
                 debug("C out:" + relation.asOutputString());
                 System.out.println(relation.asOutputString());
                 relation.setLinks(relationLinks + increment);       // This should be complete and removed at the end
-                debug("relation after: " + relation.toString());
                 displayGrid("", 2, "\n");
             // D: Connect the rest
             } else {
@@ -93,13 +93,15 @@ class Player {
                         Relation relation = getFirstRelation(nd);
                         if (relation != null && !relation.isComplete()) {
                             Node neighbor = relation.getNeighbor(nd);
-                            int increment = (int)Math.min(Math.min  // Determine possible link increment, limiting it to 2
+                            int relationLinks = relation.getLinks();
+                            int increment = (int)Math.min(Math.min  // Determine possible link increment,limiting it to 2
                                 (nd.missingLinks(), neighbor.missingLinks()), 2);
                             nd.setLinks(nd.links() + increment);
                             neighbor.setLinks(neighbor.links() + increment);
                             relation.setLinks(increment);           // One of its nodes become complete, so does relation
                             debug("D out:" + relation.asOutputString());
                             System.out.println(relation.asOutputString());
+                            relation.setLinks(relationLinks + increment); // Should be complete and removed at the end
                         }
                     }
                 }

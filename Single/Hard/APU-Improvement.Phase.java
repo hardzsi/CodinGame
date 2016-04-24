@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1015a (Tests 1-7,9,10 passed) 54%
+// APU:Improvement Phase 1015b (Tests 1-7,9,10 passed) 54%
 import java.util.*;
 
 class Player {
@@ -48,6 +48,7 @@ class Player {
         ArrayList<Relation> relationsClone = relations;
 
         ArrayList<Node> checkedNodes = new ArrayList<>();       // Store nodes with missing links that were already checked
+        ArrayList<Relation> checkedRels = new ArrayList<>();    // Store relations that were already checked
         while (true) {
             if (hasIncompleteNodes()) {                         // We should use a D level connection
                 debug("\nNEW ROUND...");
@@ -59,12 +60,11 @@ class Player {
 
                 //debug("checkedNodes:"); for (Node c : checkedNodes) { debug(c.toString()); }
                 Node node = null;
+                Relation relation = null;
                 for (int missing = 1; missing < 7 && node == null; ++missing) {
-                    for (Node n : getIncompleteNonCheckedNodesMissingLinks(missing, checkedNodes)) {
-                        node = n;
-                        /*debug("found first non-checked node with " + missing + " missing link" +
-                                (missing > 1 ? "s:" : ":") + node);
-                        debug("incomplete relations:", getIncompleteRelationsOf(node));*/
+                    for (Node nd : getIncompleteNonCheckedNodesMissingLinks(missing, checkedNodes)) {
+                        ArrayList<Relation> rels = getIncompleteNonCheckedNonCrossingRelationsOf(nd, checkedRels);
+                        node = nd;
                         checkedNodes.add(node);
                         break;
                     }
@@ -289,6 +289,19 @@ class Player {
         ArrayList<Relation> result = new ArrayList<>();
         for (Relation relation : relations) {
             if (!relation.isComplete() && relation.hasNode(node)) {
+                result.add(relation);
+            }
+        }
+        return result;        
+    }
+
+    // Return incomplete non-crossing relations of node that not found
+    // in checked - or empty list if none found
+    static ArrayList<Relation> getIncompleteNonCheckedNonCrossingRelationsOf(Node node, ArrayList<Relation> checked) {
+        ArrayList<Relation> result = new ArrayList<>();
+        for (Relation relation : relations) {
+            if (relation.hasNode(node) && !relation.isComplete() &&
+                !crossAlink(relation) && !checked.contains(relation)) {
                 result.add(relation);
             }
         }

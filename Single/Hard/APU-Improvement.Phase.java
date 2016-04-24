@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1006b (Tests 1-7,9,10 passed) 39%
+// APU:Improvement Phase 1007a (Tests 1-7,9,10 passed) 47%
 import java.util.*;
 
 class Player {
@@ -57,6 +57,7 @@ class Player {
         String outputClone = output.toString();
         ArrayList<Node> nodesClone = copyNodes(nodes);
         ArrayList<Relation> relationsClone = copyRelations(relations, nodesClone);
+        ArrayList<Relation> removedClone = copyRelations(removed, nodesClone);
         
         while (true) {
             if (hasIncompleteNodes()) {                         // We have D level connections...
@@ -67,6 +68,7 @@ class Player {
                 output.setLength(0); output.append(outputClone);
                 nodes = copyNodes(nodesClone);
                 relations = copyRelations(relationsClone, nodes);
+                removed = copyRelations(removedClone, nodes);
                 
                 Node node = getFirstMissingLinkNode(checked);   // Pick first non-checked node with one missing link
                 if (node != null) {

@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1011c (Tests 1-7,9,10 passed) 54%
+// APU:Improvement Phase 1011d (Tests 1-7,9,10 passed) 54%
 import java.util.*;
 
 class Player {
@@ -50,8 +50,8 @@ class Player {
         // Conserve lists for reverting their states if necessary
         debug(">> conserving state of nodes,relations and output");
         String outputClone = output.toString();
-        ArrayList<Node> nodesClone = copyNodes(nodes);
-        ArrayList<Relation> relationsClone = copyRelations(relations, nodesClone);
+        ArrayList<Node> nodesClone = nodes;
+        ArrayList<Relation> relationsClone = relations;
 
         ArrayList<Node> checked = new ArrayList<>();            // Store nodes with missing links that were already checked
         while (true) {

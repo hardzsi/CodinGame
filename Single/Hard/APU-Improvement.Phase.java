@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0929a (Tests 1-5,7,9,10 passed /7,9 with luck/) 47%
+// APU:Improvement Phase 0929b (Tests 1-5,7,9,10 passed /7,9 with luck/) 47%
 import java.util.*;
 
 class Player {
@@ -6,6 +6,7 @@ class Player {
     static ArrayList<Relation> relations =                      // Relations between neighboring nodes
         new ArrayList<>();                                      // with no/single/double link between them
     static ArrayList<Node> nodes = new ArrayList<>();           // List of all nodes
+    static StringBuffer output = new StringBuffer();            // Store lines to output solution
 
     public static void main(String args[]) {
         Scanner in = new Scanner(System.in);
@@ -51,7 +52,7 @@ class Player {
         // Logic
         connectABlevels();                                      // Establish all level A and B connections (run once)        
         ArrayList<Node> checked = new ArrayList<>();            // Nodes with one missing links that were checked yet
-        StringBuffer output = new StringBuffer();               // Output lines leading to solution
+
         do {
             connectClevels();                                   // Establish actual C level connections
             if (!getIncompleteNodes().isEmpty()) {
@@ -67,61 +68,25 @@ class Player {
                 }
                 ArrayList<Relation> checkRelations = getIncompleteRelationsOf(check);
                 debug("incomplete relations of node:" + check.toString(), checkRelations);
-                output.setLength(0);
+                //output.setLength(0);
                 ArrayList<Node> nodesTemp = copyNodes(nodes);
                 ArrayList<Relation> relationsTemp = copyRelations(relations);                
                 
                 
                 
                 debug("D - no above rules matched these nodes:", getIncompleteNodes());
-                for (Node nd : getIncompleteNodes()) {
-                    if(nd.aimedLinks() >= nd.neighbors()) {
-                        Relation relation = getFirstRelation(nd);
-                        if (relation != null && !relation.isComplete()) {
-                            Node neighbor = relation.getNeighbor(nd);
-                            int relationLinks = relation.getLinks();
-                            int increment = (int)Math.min(Math.min  // Determine possible link increment,limiting it to 2
-                                (nd.missingLinks(), neighbor.missingLinks()), 2);
-                            nd.setLinks(nd.links() + increment);
-                            neighbor.setLinks(neighbor.links() + increment);
-                            relation.setLinks(increment);           // One of its nodes become complete, so does relation
-                            debug("D out:" + relation.asOutputString());
-                            System.out.println(relation.asOutputString());
-                            relation.setLinks(relationLinks + increment); // Should be complete and removed at the end
-                        }
-                    }
+                for (Node node : getIncompleteNodes()) {
+                    connectDlevel(node);
                 }
                 displayGrid("", 2, "\n");               
             }
             //cleanRelations();
         } while(!getIncompleteNodes().isEmpty());
+    
+        debug("\noutput:");
+        System.out.println(output.toString());
+        
     } // main() --------------------------------------------------------------------------------------------------
-
-    // Return those incomplete nodes that has only one
-    // missing link -- or empty list if no such
-    static ArrayList<Node> getOneMissingLinkNodes() {
-        ArrayList<Node> result = new ArrayList<>();
-        for (Node node : getIncompleteNodes()) {
-            if (node.missingLinks() == 1) { result.add(node); }
-        }
-        return result;
-    } // getOneMissingLinkNodes()
-
-    static ArrayList<Node> copyNodes(ArrayList<Node> orig) {
-        ArrayList<Node> copied = new ArrayList<>(orig.size());
-        for (Node node : orig) {
-            copied.add(new Node(node));
-        }
-        return copied;
-    } // copyNodes()
-
-    static ArrayList<Relation> copyRelations(ArrayList<Relation> orig) {
-        ArrayList<Relation> copied = new ArrayList<>(orig.size());
-        for (Relation relation : orig) {
-            copied.add(new Relation(relation));
-        }
-        return copied;
-    } // copyRelations()
 
     // A,B: Establish all level A and B connections - this method should run only once
     static void connectABlevels() {
@@ -171,7 +136,7 @@ class Player {
                 neighbor.setLinks(neighbor.links() + increment);
                 relation.setLinks(increment);
                 debug("C out:" + relation.asOutputString());
-                System.out.println(relation.asOutputString());
+                output.append(relation.asOutputString()).append("\n");
                 relation.setLinks(relationLinks + increment);   // This should be complete and removed at the end
                 connect = true;
                 displayGrid("", 2, "\n");
@@ -179,6 +144,52 @@ class Player {
             cleanRelations();
         } while (connect);                                      // Until connection ocured
     } // connectClevels()
+
+    // Complete first incomplete relation of node
+    // by connecting it with maximum number of links
+    static void connectDlevel(Node node) {
+        Relation relation = getFirstRelation(node);
+        if (!relation.isComplete()) {
+            Node neighbor = relation.getNeighbor(node);
+            int relationLinks = relation.getLinks();
+            int increment = (int)Math.min(Math.min  // Determine possible link increment,limiting it to 2
+                (node.missingLinks(), neighbor.missingLinks()), 2);
+            node.setLinks(node.links() + increment);
+            neighbor.setLinks(neighbor.links() + increment);
+            relation.setLinks(increment);           // One of its nodes become complete, so does relation
+            debug("D out:" + relation.asOutputString());
+            output.append(relation.asOutputString()).append("\n");
+            relation.setLinks(relationLinks + increment); // Should be complete and removed at the end
+        }     
+    } // connectDlevel
+
+    // Return those incomplete nodes that has only one
+    // missing link -- or empty list if no such
+    static ArrayList<Node> getOneMissingLinkNodes() {
+        ArrayList<Node> result = new ArrayList<>();
+        for (Node node : getIncompleteNodes()) {
+            if (node.missingLinks() == 1) { result.add(node); }
+        }
+        return result;
+    } // getOneMissingLinkNodes()
+
+    // Deep copy a Node array
+    static ArrayList<Node> copyNodes(ArrayList<Node> orig) {
+        ArrayList<Node> copied = new ArrayList<>(orig.size());
+        for (Node node : orig) {
+            copied.add(new Node(node));
+        }
+        return copied;
+    } // copyNodes()
+
+    // Deep copy a Relation array
+    static ArrayList<Relation> copyRelations(ArrayList<Relation> orig) {
+        ArrayList<Relation> copied = new ArrayList<>(orig.size());
+        for (Relation relation : orig) {
+            copied.add(new Relation(relation));
+        }
+        return copied;
+    } // copyRelations()
 
     // Increment links of specified node, all its neighbors
     // and connections to the specified value
@@ -203,7 +214,7 @@ class Player {
                                                                 // already has a single link
             debug((node.aimedLinks() % 2 == 0 ? "A" : "B") +
                 " out:" + relation.asOutputString());
-            System.out.println(relation.asOutputString());
+            output.append(relation.asOutputString()).append("\n");
             relation.setLinks(increment);
         }
         cleanRelations();

@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0928a (Tests 1-5,7,9,10 passed) 47%
+// APU:Improvement Phase 0928b (Tests 1-5,7,9,10 passed /7,9 with luck/) 47%
 import java.util.*;
 
 class Player {
@@ -47,9 +47,12 @@ class Player {
         debug("\noutput:");
         //System.out.println("0 0 2 0 1");                      // Two coords and an int: a node, one of its neighbors,
         //System.out.println("2 0 2 2 1");                      // number of links connecting them
-        
+
+        // Logic
+        connectABlevels();                                      // Establish all level A and B connections (run once)        
         do {
-            createABCconnections();                             // Establish all level A, B and C connections
+            connectClevels();                                   // Establish actual C level connections
+            
             if (!getIncompleteNodes().isEmpty()) {
                 debug("D - no above rules matched these nodes:", getIncompleteNodes());
                 for (Node nd : getIncompleteNodes()) {
@@ -91,9 +94,9 @@ class Player {
         return copied;
     } // copyRelations()
 
-    // Establish all level A, B and C connections
-    static void createABCconnections() {
-        boolean connect = false;
+    // A,B: Establish all level A and B connections - this method should run only once
+    static void connectABlevels() {
+        boolean connect;
         do {
             Node node;
             connect = false;
@@ -115,9 +118,20 @@ class Player {
                 incrementLinksTo(1, node); connect = true;
             } else if ((node = getSpecifiedNode(1, 1, 1)) != null) {
                 incrementLinksTo(1, node); connect = true;
-            // C: Connect nodes that only one incomplete relation left
-            } else if (!getSingleIncompleteRelationNodes().isEmpty()) {
-                node = getSingleIncompleteRelationNodes().get(0);// Pick first node
+            }
+            if (connect) { displayGrid("", 2, "\n"); }
+            cleanRelations();
+        } while (connect);                                      // Until connection ocured
+    } // connectABlevels()
+
+    // C: Establish actual C level connections - connect
+    // those nodes that only one incomplete relation left    
+    static void connectClevels() {
+        boolean connect;
+        do {
+            connect = false;
+            if (!getSingleIncompleteRelationNodes().isEmpty()) {
+                Node node = getSingleIncompleteRelationNodes().get(0);// Pick first node
                 debug("C - one incomplete relationed node:" + node.toString());                
                 Relation relation =
                     getIncompleteRelationsOf(node).get(0);      // Should be only one
@@ -133,10 +147,10 @@ class Player {
                 relation.setLinks(relationLinks + increment);   // This should be complete and removed at the end
                 connect = true;
             }
-            displayGrid("", 2, "\n");
+            if (connect) { displayGrid("", 2, "\n"); }
             cleanRelations();
         } while (connect);                                      // Until connection ocured
-    } // createABCconnections()
+    } // connectClevels()
 
     // Increment links of specified node, all its neighbors
     // and connections to the specified value
@@ -164,7 +178,6 @@ class Player {
             System.out.println(relation.asOutputString());
             relation.setLinks(increment);
         }
-        //displayGrid("", 2, "\n");
     } // incrementLinksTo()
 
     // Fill relations list recursively from first provided node

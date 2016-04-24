@@ -1,4 +1,4 @@
-// APU:Improvement Phase 0927c (Tests 1-5,7,9,10 passed) 47%
+// APU:Improvement Phase 0928a (Tests 1-5,7,9,10 passed) 47%
 import java.util.*;
 
 class Player {
@@ -49,45 +49,9 @@ class Player {
         //System.out.println("2 0 2 2 1");                      // number of links connecting them
         
         do {
-            Node node;
-            // A: Connect nodes where double links needed to all neighbors
-            if ((node = getSpecifiedNode(8, 4, 2)) != null) {   // Get 1st incomplete node matching aimed links & neighbors
-                incrementLinksTo(2, node);                      // Increment links of node, all its neighbors & connections
-            } else if ((node = getSpecifiedNode(6, 3, 2)) != null) {
-                incrementLinksTo(2, node);
-            } else if ((node = getSpecifiedNode(4, 2, 2)) != null) {
-                incrementLinksTo(2, node);
-            } else if ((node = getSpecifiedNode(2, 1, 2)) != null) {
-                incrementLinksTo(2, node); 
-            // B: Connect nodes where at least single link possible to all neighbors
-            } else if ((node = getSpecifiedNode(7, 4, 1)) != null) {
-                incrementLinksTo(1, node);
-            } else if ((node = getSpecifiedNode(5, 3, 1)) != null) {
-                incrementLinksTo(1, node);
-            } else if ((node = getSpecifiedNode(3, 2, 1)) != null) {
-                incrementLinksTo(1, node);
-            } else if ((node = getSpecifiedNode(1, 1, 1)) != null) {
-                incrementLinksTo(1, node);
-            // C: Connect nodes that only one incomplete relation left
-            } else if (!getSingleIncompleteRelationNodes().isEmpty()) {
-                node = getSingleIncompleteRelationNodes().get(0);   // Pick first node
-                debug("C: one incomplete relationed node:" + node.toString());                
-                Relation relation =
-                    getIncompleteRelationsOf(node).get(0);          // Should be only one
-                Node neighbor = relation.getNeighbor(node);
-                int relationLinks = relation.getLinks();
-                int increment = (int)Math.min(Math.min              // Determine possible link increment,limiting it to 2
-                    (node.missingLinks(), neighbor.missingLinks()), 2);
-                node.setLinks(node.links() + increment);
-                neighbor.setLinks(neighbor.links() + increment);
-                relation.setLinks(increment);
-                debug("C out:" + relation.asOutputString());
-                System.out.println(relation.asOutputString());
-                relation.setLinks(relationLinks + increment);       // This should be complete and removed at the end
-                displayGrid("", 2, "\n");
-            // D: Connect the rest
-            } else {
-                debug("D: no above rules matched these nodes:", getIncompleteNodes());
+            createABCconnections();                             // Establish all level A, B and C connections
+            if (!getIncompleteNodes().isEmpty()) {
+                debug("D - no above rules matched these nodes:", getIncompleteNodes());
                 for (Node nd : getIncompleteNodes()) {
                     if(nd.aimedLinks() >= nd.neighbors()) {
                         Relation relation = getFirstRelation(nd);
@@ -107,7 +71,7 @@ class Player {
                 }
                 displayGrid("", 2, "\n");               
             }
-            cleanRelations();
+            //cleanRelations();
         } while(!getIncompleteNodes().isEmpty());
     } // main() --------------------------------------------------------------------------------------------------
 
@@ -127,10 +91,57 @@ class Player {
         return copied;
     } // copyRelations()
 
+    // Establish all level A, B and C connections
+    static void createABCconnections() {
+        boolean connect = false;
+        do {
+            Node node;
+            connect = false;
+            // A: Connect nodes where double links needed to all neighbors
+            if ((node = getSpecifiedNode(8, 4, 2)) != null) {   // Get 1st incomplete node matching aimed links& neighbors
+                incrementLinksTo(2, node); connect = true;      // Increment links of node,all its neighbors & connections
+            } else if ((node = getSpecifiedNode(6, 3, 2)) != null) {
+                incrementLinksTo(2, node); connect = true;
+            } else if ((node = getSpecifiedNode(4, 2, 2)) != null) {
+                incrementLinksTo(2, node); connect = true;
+            } else if ((node = getSpecifiedNode(2, 1, 2)) != null) {
+                incrementLinksTo(2, node); connect = true;
+            // B: Connect nodes where at least single link possible to all neighbors
+            } else if ((node = getSpecifiedNode(7, 4, 1)) != null) {
+                incrementLinksTo(1, node); connect = true;
+            } else if ((node = getSpecifiedNode(5, 3, 1)) != null) {
+                incrementLinksTo(1, node); connect = true;
+            } else if ((node = getSpecifiedNode(3, 2, 1)) != null) {
+                incrementLinksTo(1, node); connect = true;
+            } else if ((node = getSpecifiedNode(1, 1, 1)) != null) {
+                incrementLinksTo(1, node); connect = true;
+            // C: Connect nodes that only one incomplete relation left
+            } else if (!getSingleIncompleteRelationNodes().isEmpty()) {
+                node = getSingleIncompleteRelationNodes().get(0);// Pick first node
+                debug("C - one incomplete relationed node:" + node.toString());                
+                Relation relation =
+                    getIncompleteRelationsOf(node).get(0);      // Should be only one
+                Node neighbor = relation.getNeighbor(node);
+                int relationLinks = relation.getLinks();
+                int increment = (int)Math.min(Math.min          // Determine possible link increment, limiting it to 2
+                    (node.missingLinks(), neighbor.missingLinks()), 2);
+                node.setLinks(node.links() + increment);
+                neighbor.setLinks(neighbor.links() + increment);
+                relation.setLinks(increment);
+                debug("C out:" + relation.asOutputString());
+                System.out.println(relation.asOutputString());
+                relation.setLinks(relationLinks + increment);   // This should be complete and removed at the end
+                connect = true;
+            }
+            displayGrid("", 2, "\n");
+            cleanRelations();
+        } while (connect);                                      // Until connection ocured
+    } // createABCconnections()
+
     // Increment links of specified node, all its neighbors
     // and connections to the specified value
     static void incrementLinksTo(int increment, Node node) {
-        debug((node.aimedLinks() % 2 == 0 ? "A" : "B") + ": found " +
+        debug((node.aimedLinks() % 2 == 0 ? "A" : "B") + " found " +
             node.aimedLinks() + "," + node.neighbors() + "," + increment +
             " [aim,nb,inc] in node:" + node.toString());
         // Determine incomplete relations of node that have less links than increment
@@ -153,7 +164,7 @@ class Player {
             System.out.println(relation.asOutputString());
             relation.setLinks(increment);
         }
-        displayGrid("", 2, "\n");
+        //displayGrid("", 2, "\n");
     } // incrementLinksTo()
 
     // Fill relations list recursively from first provided node

@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1011a4 (Tests 1-7,9,10 passed) 54%
+// APU:Improvement Phase 1011b (Tests 1-7,9,10 passed) 54%
 import java.util.*;
 
 class Player {
@@ -53,6 +53,7 @@ class Player {
         ArrayList<Relation> relationsClone = copyRelations(relations, nodesClone);
 
         ArrayList<Node> checked = new ArrayList<>();            // Store nodes with missing links that were already checked
+        //ArrayList<Node> checkables = getIncompleteNodes();
         while (true) {
             if (hasIncompleteNodes()) {                         // We should use a D level connection
                 debug("\nNEW ROUND...");
@@ -62,8 +63,8 @@ class Player {
                 output.setLength(0); output.append(outputClone);
                 nodes = copyNodes(nodesClone);
                 relations = copyRelations(relationsClone, nodes);
-                
-                //debug("missing link nodes:", getMissingLinkNodes());
+
+                //debug("checkables:", checkables);               // Incomplete nodes = those having missing links
                 //debug("checked:"); for (Node c : checked) { debug(c.toString()); }
                 Node node = getFirstMissingLinkNode(checked);   // Pick first non-checked node with one missing link
                 if (node != null) {
@@ -76,8 +77,22 @@ class Player {
                         output.append("FUCK!!! There are no more nodes to check"); break;
                     }
                 }
-
-                //debug("incomplete relations of node:" + node, getIncompleteRelationsOf(node));
+                /*Node checkNode = null;
+                for (int missing = 1; missing < 8 && checkNode == null; ++missing) {
+                    for (Node node : checkables) {
+                        if (node.missingLinks() == missing) {
+                            checkNode = node;
+                            checkables.remove(node);
+                            break;
+                        }
+                    }
+                }
+                if (checkNode == null || checkables.isEmpty()) {
+                    output.append("FUCK!!! There are no more nodes to check"); break;
+                } else {
+                    debug("checkNode:" + checkNode);
+                }*/
+                //debug("node:" + node);
                 debug("D level"); connectDlevel(node);          // Complete first incomplete relation of node
                 debug("C level"); connectClevels();             // Establish new C level connections
                 if (hasIncompleteNodes()) { debug("incomplete nodes remained - try again with another..."); }
@@ -120,7 +135,7 @@ class Player {
                     debug("C does NOT connect, crossing found for " + relation);
                 }
             } else {
-                //debug("single incomplete relation nodes is empty - no connection");
+                debug("single incomplete relation nodes is empty - no connection");
             }
         } while (connect);                                      // Until connection ocured
     }
@@ -241,15 +256,6 @@ class Player {
         }
     }
 
-    // Return incomplete nodes that have missing link(s) - or empty list, if none
-    static ArrayList<Node> getMissingLinkNodes() {
-        ArrayList<Node> result = new ArrayList<>();
-        for (Node node : getIncompleteNodes()) {
-            if (node.missingLinks() > 0) { result.add(node); }
-        }
-        return result;
-    }
-
     // Return first non-checked node with one missing link - or null if no such
     static Node getFirstMissingLinkNode(ArrayList<Node> checked) {
         Node result = null;
@@ -301,8 +307,8 @@ class Player {
 
     static boolean hasIncompleteNodes() { return !getIncompleteNodes().isEmpty(); }
 
-    // Return list of nodes from 'nodes' where actual number of links
-    // less than aimed. Empty list returned if all nodes are complete
+    // Return nodes where number of links less than aimed
+    // Empty list returned if all nodes complete
     static ArrayList<Node> getIncompleteNodes() {
         ArrayList<Node> result = new ArrayList<>();
         for (Node node : nodes) {
@@ -311,8 +317,7 @@ class Player {
         return result;
     }
 
-    // Return incomplete relations of 'relations' list
-    // or empty list if none found
+    // Return incomplete relations - or empty list if none found
      static ArrayList<Relation> getIncompleteRelations() {
         ArrayList<Relation> result = new ArrayList<>();
         for (Relation relation : relations) {

@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1016a (Tests 1-7,9,10 passed) 54%
+// APU:Improvement Phase 1016b (Tests 1-7,9,10 passed) 62%
 import java.util.*;
 
 class Player {
@@ -59,29 +59,27 @@ class Player {
                 relations = copyRelations(relationsClone, nodes);
 
                 // START YOUR ENGINES!
-                //debug("checkedNodes:"); for (Node c : checkedNodes) { debug(c.toString()); }
                 Node node = null;                               // Checkable node
                 Relation relation = null;                       // Checkable relation
                 for (int missing = 1; missing < 7 && node == null; ++missing) {
                     for (Node nd : getIncompleteNonCheckedNodesMissingLinks(missing, checkedNodes)) {
                         ArrayList<Relation> rels = getIncompleteNonCheckedNonCrossingRelationsOf(nd, checkedRels);
                         debug("checkable node:" + nd);
-                        debug("checked relations:", checkedRels);                        
-                        debug("checkable relations:", rels);
+                        //debug("checked relations:", checkedRels); debug("checkable relations:", rels);
                         if (!rels.isEmpty()) {                  // Pick 1st suitable relation if exist, then exit loop
                             node = nd;
                             relation = rels.get(0);
                             checkedRels.add(new Relation(relation, nodes));
+                            if (rels.size() == 1) { checkedNodes.add(new Node(nd)); }
                             break;
                         } else {                                // If no suitable relations, store node and pick next one
                             checkedNodes.add(new Node(nd));
                         }
-                        //node = nd; checkedNodes.add(node); break;
                     }
                 }
                 if (node == null) { output.append("FUCK!!! There are no more nodes to check"); break; }
-                debug("D level"); connectDlevel(node);          // Complete first incomplete relation of node
-                debug("C level"); connectClevels(true);         // Establish new C level connections
+                debug("D level"); connectDlevel(node, relation);// Complete first incomplete relation of node
+                debug("C level"); connectClevels(false);         // Establish new C level connections
                 if (hasIncompleteNodes()) { debug("incomplete nodes remained - try again with another..."); }
             } else {
                 break;
@@ -127,8 +125,8 @@ class Player {
 
     // Complete first incomplete relation of node
     // by connecting it with maximum number of links
-    static void connectDlevel(Node node) {
-        Relation relation = getFirstIncompleteRelation(node);   // this may be faster than getIncompleteRelationsOf()...
+    static void connectDlevel(Node node, Relation relation) {
+        //Relation relation = getFirstIncompleteRelation(node);   // this may be faster than getIncompleteRelationsOf()...
         //Relation relation = getIncompleteRelationsOf(node).get(0);
         if (!crossAlink(relation)) {                            // Connect if relation does NOT cross a link
             debug("connecting " + relation);

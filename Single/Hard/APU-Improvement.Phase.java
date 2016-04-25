@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1016b (Tests 1-7,9,10 passed) 62%
+// APU:Improvement Phase 1017a (Tests 1-7,9,10 passed) 62%
 import java.util.*;
 
 class Player {
@@ -25,11 +25,14 @@ class Player {
                 }
             }
         }
-        //HACK! (Intermediate2) 
-        /*gridXY[0]=4; gridXY[1]=4; nodes.clear();
-        nodes.add(new Node(0,0,2));nodes.add(new Node(0,1,5));nodes.add(new Node(0,3,1));nodes.add(new Node(1,0,4));
-        nodes.add(new Node(1,1,7));nodes.add(new Node(1,3,4));nodes.add(new Node(2,2,1));nodes.add(new Node(3,0,3));
-        nodes.add(new Node(3,1,3));nodes.add(new Node(3,2,4));nodes.add(new Node(3,3,4));*/
+        //HACK! (Advanced) 
+        /*gridXY[0]=8; gridXY[1]=8; nodes.clear();
+        nodes.add(new Node(0,0,3));nodes.add(new Node(0,3,1));nodes.add(new Node(1,1,1));nodes.add(new Node(1,5,3));
+        nodes.add(new Node(1,6,2));nodes.add(new Node(1,7,4));nodes.add(new Node(2,0,4));nodes.add(new Node(2,2,2));
+        nodes.add(new Node(2,4,1));nodes.add(new Node(3,6,1));nodes.add(new Node(4,0,6));nodes.add(new Node(4,2,5));
+        nodes.add(new Node(4,5,5));nodes.add(new Node(4,6,7));nodes.add(new Node(4,7,5));nodes.add(new Node(5,5,2));
+        nodes.add(new Node(5,7,1));nodes.add(new Node(6,0,2));nodes.add(new Node(7,2,2));nodes.add(new Node(7,5,3));
+        nodes.add(new Node(7,6,4));nodes.add(new Node(7,7,2));*/
         displayGrid("\n", 1, "\n");                             // Display grid of nodes with aimed number of links
         collectRelations(nodes.get(0));                         // Fill relations list collecting relations recursively
         initNodeNeighbors();                                    // Set neighbors for all nodes

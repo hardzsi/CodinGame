@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1017a (Tests 1-7,9,10 passed) 62%
+// APU:Improvement Phase 1017b (Tests 1-7,9,10 passed) 62%
 import java.util.*;
 
 class Player {
@@ -37,7 +37,8 @@ class Player {
         collectRelations(nodes.get(0));                         // Fill relations list collecting relations recursively
         initNodeNeighbors();                                    // Set neighbors for all nodes
         //debug("\nnodes:", nodes); debug("");
-        //debug("crossable relations:"); for (Relation rel : relations) {if (rel.isCrossable()) {debug(rel);}}
+        //debug("relations:", relations); debug("");
+        //debug("crossable relations:"); for (Relation rel : relations) { if (rel.isCrossable()) {debug(rel.toString());} }
 
         // ################################################### Logic #####################################################
         // ###############################################################################################################
@@ -68,7 +69,6 @@ class Player {
                     for (Node nd : getIncompleteNonCheckedNodesMissingLinks(missing, checkedNodes)) {
                         ArrayList<Relation> rels = getIncompleteNonCheckedNonCrossingRelationsOf(nd, checkedRels);
                         debug("checkable node:" + nd);
-                        //debug("checked relations:", checkedRels); debug("checkable relations:", rels);
                         if (!rels.isEmpty()) {                  // Pick 1st suitable relation if exist, then exit loop
                             node = nd;
                             relation = rels.get(0);
@@ -193,22 +193,22 @@ class Player {
             Node node;
             connect = false;
             // A: Connect nodes where double links needed to all neighbors
-            if ((node = getSpecifiedNode(8, 4, 2)) != null) {   // Get 1st incomplete node matching aimed links& neighbors
+            if ((node = getMatchingNode(8, 4, 2)) != null) {   // Get 1st incomplete node matching aimed links& neighbors
                 incrementLinksTo(2, node); connect = true;      // Increment links of node,all its neighbors & connections
-            } else if ((node = getSpecifiedNode(6, 3, 2)) != null) {
+            } else if ((node = getMatchingNode(6, 3, 2)) != null) {
                 incrementLinksTo(2, node); connect = true;
-            } else if ((node = getSpecifiedNode(4, 2, 2)) != null) {
+            } else if ((node = getMatchingNode(4, 2, 2)) != null) {
                 incrementLinksTo(2, node); connect = true;
-            } else if ((node = getSpecifiedNode(2, 1, 2)) != null) {
+            } else if ((node = getMatchingNode(2, 1, 2)) != null) {
                 incrementLinksTo(2, node); connect = true;
             // B: Connect nodes where at least single link possible to all neighbors
-            } else if ((node = getSpecifiedNode(7, 4, 1)) != null) {
+            } else if ((node = getMatchingNode(7, 4, 1)) != null) {
                 incrementLinksTo(1, node); connect = true;
-            } else if ((node = getSpecifiedNode(5, 3, 1)) != null) {
+            } else if ((node = getMatchingNode(5, 3, 1)) != null) {
                 incrementLinksTo(1, node); connect = true;
-            } else if ((node = getSpecifiedNode(3, 2, 1)) != null) {
+            } else if ((node = getMatchingNode(3, 2, 1)) != null) {
                 incrementLinksTo(1, node); connect = true;
-            } else if ((node = getSpecifiedNode(1, 1, 1)) != null) {
+            } else if ((node = getMatchingNode(1, 1, 1)) != null) {
                 incrementLinksTo(1, node); connect = true;
             }
         } while (connect);                                      // Until connection ocured
@@ -249,14 +249,12 @@ class Player {
         return null;
     }
 
-    // Return first incomplete node that match aimed links and 
-    // neighbors, also having less links than aimed number of
-    // connections to be established -- or null if no matching
-    static Node getSpecifiedNode(int aimed, int neighbors, int increment) {
+    // Return first incomplete node that match aimed links and neighbors
+    // and has at least one nonlinked relation - or null if not found such
+    static Node getMatchingNode(int aimed, int neighbors, int increment) {
         for (Node node : nodes) {
-            if (!node.isComplete() && (node.aimedLinks() == aimed) &&
-                (node.neighbors() == neighbors) &&
-                (node.links() < (node.neighbors() * increment))) {
+            if (!node.isComplete() && node.aimedLinks() == aimed &&
+                    node.neighbors() == neighbors && hasUnlinkedRelationOf(node)) {
                 return node;
             }
         }
@@ -295,11 +293,24 @@ class Player {
         return result;        
     }  
 
+    // Return true if a node has at least one unlinked relation
+    static boolean hasUnlinkedRelationOf(Node node) {
+        boolean result = false;
+        for (Relation relation : relations) {
+            if (relation.hasNode(node) && relation.isUnlinked()) {
+                result = true;
+                break;
+            }
+        }
+        return result;         
+    }
+
+
     // Return incomplete relations of node or empty list if none found
     static ArrayList<Relation> getIncompleteRelationsOf(Node node) {
         ArrayList<Relation> result = new ArrayList<>();
         for (Relation relation : relations) {
-            if (!relation.isComplete() && relation.hasNode(node)) {
+            if (relation.hasNode(node) && !relation.isComplete()) {
                 result.add(relation);
             }
         }
@@ -559,6 +570,7 @@ class Relation implements Comparable<Relation> {
     public boolean  isVertical()   { return nodeA.getX() == nodeB.getX(); }
     public boolean  isHorizontal() { return nodeA.getY() == nodeB.getY(); }
     public boolean  isCrossable()  { return crossable; }
+    public boolean  isUnlinked()   { return links == 0; }
     
     public void setLinks(int actualLinks) { links = actualLinks; }
     

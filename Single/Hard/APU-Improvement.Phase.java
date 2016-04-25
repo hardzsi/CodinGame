@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1015b (Tests 1-7,9,10 passed) 54%
+// APU:Improvement Phase 1016a (Tests 1-7,9,10 passed) 54%
 import java.util.*;
 
 class Player {
@@ -58,15 +58,25 @@ class Player {
                 nodes = copyNodes(nodesClone);
                 relations = copyRelations(relationsClone, nodes);
 
+                // START YOUR ENGINES!
                 //debug("checkedNodes:"); for (Node c : checkedNodes) { debug(c.toString()); }
-                Node node = null;
-                Relation relation = null;
+                Node node = null;                               // Checkable node
+                Relation relation = null;                       // Checkable relation
                 for (int missing = 1; missing < 7 && node == null; ++missing) {
                     for (Node nd : getIncompleteNonCheckedNodesMissingLinks(missing, checkedNodes)) {
                         ArrayList<Relation> rels = getIncompleteNonCheckedNonCrossingRelationsOf(nd, checkedRels);
-                        node = nd;
-                        checkedNodes.add(node);
-                        break;
+                        debug("checkable node:" + nd);
+                        debug("checked relations:", checkedRels);                        
+                        debug("checkable relations:", rels);
+                        if (!rels.isEmpty()) {                  // Pick 1st suitable relation if exist, then exit loop
+                            node = nd;
+                            relation = rels.get(0);
+                            checkedRels.add(new Relation(relation, nodes));
+                            break;
+                        } else {                                // If no suitable relations, store node and pick next one
+                            checkedNodes.add(new Node(nd));
+                        }
+                        //node = nd; checkedNodes.add(node); break;
                     }
                 }
                 if (node == null) { output.append("FUCK!!! There are no more nodes to check"); break; }
@@ -421,10 +431,15 @@ class Player {
 
     static void debug(String str) { System.err.println(str); }
     
-    // Display a generic arraylist
+    // Display a generic arraylist or "EMPTY LIST!" if list empty
     static <T> void debug(String str, ArrayList<T> list) {
-        System.err.println(str);
-        for (T element : list) { debug(element.toString()); }
+        if (!list.isEmpty()) {
+            System.err.println(str);
+            for (T element : list) { debug(element.toString()); }        
+        } else {
+            str += "EMPTY LIST!";
+            System.err.println(str);
+        }
     }
     
     // Display grid with 0:actual, 1:aimed, 2:filtered

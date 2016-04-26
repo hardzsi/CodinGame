@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1018a (Tests 1-7,9,10 passed) 62%
+// APU:Improvement Phase 1018b (Tests 1-10 passed) 70%
 import java.util.*;
 
 class Player {
@@ -43,8 +43,8 @@ class Player {
         // ################################################### Logic #####################################################
         // ###############################################################################################################
         connectABlevels();                                      // Establish level A and B connections (run once)
-        if (hasIncompleteNodes()) { debug("C level"); connectClevels(false); }  // Establish C level connections if found
-        if (hasIncompleteNodes()) { debug("E level"); connectElevels(); }       // Establish E level connections if found
+        if (hasIncompleteNodes()) { debug("C level"); connectClevels(false); }  // Establish possible C level connections
+        if (hasIncompleteNodes()) { debug("E level"); connectElevels(); }       // Establish possible E level connections
         displayGrid("\n", 2, "\n");     
         // Conserve lists for reverting their states if necessary
         debug(hasIncompleteNodes() ? ">> conserving state of nodes,relations and output" : "done!");
@@ -55,7 +55,7 @@ class Player {
         ArrayList<Node> checkedNodes = new ArrayList<>();       // Store nodes with missing links that were already checked
         ArrayList<Relation> checkedRels = new ArrayList<>();    // Store relations that were already checked
         while (true) {
-            if (hasIncompleteNodes()) {                         // We should use a D level connection
+            if (hasIncompleteNodes()) {                         // We should establish a D level connection
                 debug("\nNEW ROUND...");
                 // Revert nodes, relations and output
                 debug("<< reverting state of nodes, relations and output");
@@ -84,7 +84,7 @@ class Player {
                 }
                 if (node == null) { output.append("FUCK!!! There are no more nodes to check"); break; }
                 debug("D level"); connectDlevel(node, relation); // Complete an incomplete non-crossing relation of node
-                debug("C level"); connectClevels(false);         // Establish new C level connections
+                debug("C level"); connectClevels(false);         // Establish possible new C level connections
                 if (hasIncompleteNodes()) { debug("incomplete nodes remained - try again with another..."); }
             } else {
                 break;
@@ -92,7 +92,7 @@ class Player {
         }
         debug("output:");                                       // Two coords and an int: a node, one of its
         System.out.println(output.toString());                  // neighbors, number of links connecting them
-    } // main() -------------------------------------------------------------------------------------------------
+    } // main() --------------------------------------------------------------------------------------------------------
 
     // E: Connect second link to relations of such nodes
     // that 2 relations left with 1-1 missing link
@@ -118,7 +118,7 @@ class Player {
                     debug("connecting " + relationB);
                     debug("E out:" + relationB.asOutputString());
                     output.append(relationB.asOutputString()).append("\n");
-                    node.setLinks(node.links() + 2);            // Should be equals to: node.setLinks(node.aimedLinks());
+                    node.setLinks(node.links() + 2);            // Set node and both its neighbors and relations
                     neighborA.setLinks(neighborA.links() + 1);
                     neighborB.setLinks(neighborB.links() + 1);
                     relationA.setLinks(2);
@@ -138,7 +138,7 @@ class Player {
                     getSingleIncompleteRelationNodes().get(0);  // Pick first node
                 Relation relation =
                     getIncompleteRelationsOf(node).get(0);      // Should be only one
-                if (!crossAlink(relation)) {                    // Connect if relation does NOT cross a link
+                if (!isCrossing(relation)) {                    // Connect if relation does NOT cross a link
                     debug("connecting " + relation);
                     Node neighbor = relation.getNeighbor(node);
                     int relationLinks = relation.getLinks();
@@ -158,7 +158,7 @@ class Player {
             } else {
                 debug("single incomplete relation nodes is empty - no connection");
             }
-        } while (connect);                                      // Until connection ocured
+        } while (connect);                                      // Until connection occured
     }
 
     // D: Complete relation of node with maximum number of links
@@ -174,11 +174,10 @@ class Player {
         debug("D out:" + relation.asOutputString());
         output.append(relation.asOutputString()).append("\n");
         relation.setLinks(relationLinks + increment);           // Should be complete and removed at the end
-        //displayGrid("", 2, "\n");
     }
 
     // Return true if relation crosses a single or double link
-    static boolean crossAlink(Relation rel) {
+    static boolean isCrossing(Relation rel) {
         if (!rel.isCrossable()) { return false; }
         ArrayList<Relation> checkRelations = new ArrayList<>(relations);
         boolean cross = false;
@@ -191,10 +190,10 @@ class Player {
                 Node[] nodeCD = relation.getNodes();
                 int links = relation.getLinks();
                 int xC = nodeCD[0].getX(); int xD = nodeCD[1].getX();
-                int yC = nodeCD[0].getY(); int yD = nodeCD[1].getY();            
+                int yC = nodeCD[0].getY(); int yD = nodeCD[1].getY();
                 int directionCD = relation.isVertical() ? 0 : 1;
                 // Can cross only if directions differ and relations have links
-                if (!rel.equals(relation) && directionAB != directionCD && links > 0) {              
+                if (!rel.equals(relation) && directionAB != directionCD && links > 0) {
                     if (directionAB == 0 && directionCD == 1) { // possible crossing of vertical with horizontal
                         if ((xC < xA && xD > xA) || (xC > xA && xD < xA)) {
                             if ((yA < yC && yB > yC) || (yA > yC && yB < yC)) {
@@ -208,11 +207,11 @@ class Player {
                             }
                         }
                     }
-                }            
+                }
             }
         }
         return cross;
-    } // crossAlink()
+    }
 
     // A,B: Connect nodes where single or double links possible to all neighbors
     static void connectABlevels() {
@@ -330,7 +329,7 @@ class Player {
                 break;
             }
         }
-        return result;         
+        return result;
     }
 
     // Return incomplete relations of node or empty list if none found
@@ -341,7 +340,7 @@ class Player {
                 result.add(relation);
             }
         }
-        return result;        
+        return result;
     }
 
     // Return incomplete non-crossing relations of node that not found
@@ -350,11 +349,11 @@ class Player {
         ArrayList<Relation> result = new ArrayList<>();
         for (Relation relation : relations) {
             if (relation.hasNode(node) && !relation.isComplete() &&
-                !crossAlink(relation) && !checked.contains(relation)) {
+                !isCrossing(relation) && !checked.contains(relation)) {
                 result.add(relation);
             }
         }
-        return result;        
+        return result;
     }
 
     // Return those incomplete nodes from 'nodes' that only one
@@ -469,18 +468,18 @@ class Player {
     }
 
     static void debug(String str) { System.err.println(str); }
-    
+
     // Display a generic arraylist or "EMPTY LIST!" if list empty
     static <T> void debug(String str, ArrayList<T> list) {
         if (!list.isEmpty()) {
             System.err.println(str);
-            for (T element : list) { debug(element.toString()); }        
+            for (T element : list) { debug(element.toString()); }
         } else {
             str += "EMPTY LIST!";
             System.err.println(str);
         }
     }
-    
+
     // Display grid with 0:actual, 1:aimed, 2:filtered
     // (aimed-actual where actual<>aimed) number of links
     static void displayGrid(String before, int type, String after) {
@@ -504,7 +503,7 @@ class Player {
         if (after.equals("\n")) debug("");
     }
 
-} // class Player -------------------------------------------------------
+} // class Player ####################################################################################################
 
 // Node class with coordinates, actual and aimed number of links
 // leading to it as well as number of neighbors it can be linked to
@@ -514,7 +513,7 @@ class Node {
         this.x = x; this.y = y;
         aimedLinks = aimed;
     }
-    
+
     public Node(Node orig) {                                    // Copy constructor
         x =          orig.getX();
         y =          orig.getY();
@@ -522,26 +521,26 @@ class Node {
         aimedLinks = orig.aimedLinks();
         neighbors =  orig.neighbors();
     }
-    
+
     @Override public boolean equals(Object other) {
         if (other == null) { return false; }
         if (x == ((Node)other).getX() &&
             y == ((Node)other).getY()) { return true; }
         return false;
     }
-    
+
     @Override public String toString() {
         return x + "," + y + " (links:" + links + ", aimed:" +
         aimedLinks + ", neighbors:" + neighbors + ")";
     }
-    
+
     public int  getX()                   { return x; }
     public int  getY()                   { return y; }
     public int  links()                  { return links; }
     public int  aimedLinks()             { return aimedLinks; }
     public int  missingLinks()           { return aimedLinks - links; }
     public int  neighbors()              { return neighbors; }
-    public boolean isComplete()          { return links == aimedLinks; }    
+    public boolean isComplete()          { return links == aimedLinks; }
     public void setLinks(int actual)     { links = actual; }
     public void setAimedLinks(int aimed) { aimedLinks = aimed; }
     public void setNeighbors(int n)      { neighbors = n; }
@@ -576,16 +575,16 @@ class Relation implements Comparable<Relation> {
     } 
 
     // Copy constructor - usig nodes in list to create a new relation
-    public Relation(Relation orig, ArrayList<Node> nodeList) {         
+    public Relation(Relation orig, ArrayList<Node> nodeList) {
         Node[] nodeAB = orig.getNodes();
         nodeA = nodeList.get(nodeList.indexOf(nodeAB[0]));
         nodeB = nodeList.get(nodeList.indexOf(nodeAB[1]));
         links = orig.getLinks();
         crossable = orig.isCrossable();
     }
-    
+
     public Node[]   getNodes() { return new Node[] { nodeA, nodeB }; }
-    public int      getLinks() { return links; }      
+    public int      getLinks() { return links; }
     public Node     getNeighbor(Node node) {
         return node.equals(nodeB) ? nodeA : nodeB;
     }
@@ -598,9 +597,9 @@ class Relation implements Comparable<Relation> {
     public boolean  isHorizontal() { return nodeA.getY() == nodeB.getY(); }
     public boolean  isCrossable()  { return crossable; }
     public boolean  isUnlinked()   { return links == 0; }
-    
+
     public void setLinks(int actualLinks) { links = actualLinks; }
-    
+
     public String asOutputString() {
         return "" + nodeA.getX() + " " + nodeA.getY() + " " +
                     nodeB.getX() + " " + nodeB.getY() + " " + links;

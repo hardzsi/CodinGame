@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1017c (Tests 1-7,9,10 passed) 62%
+// APU:Improvement Phase 1017d (Tests 1-7,9,10 passed) 62%
 import java.util.*;
 
 class Player {
@@ -43,7 +43,8 @@ class Player {
         // ################################################### Logic #####################################################
         // ###############################################################################################################
         connectABlevels();                                      // Establish level A and B connections (run once)
-        if (hasIncompleteNodes()) { debug("C level"); connectClevels(false); } // Establish C level connections if needed
+        if (hasIncompleteNodes()) { debug("C level"); connectClevels(false); }  // Establish C level connections if found
+        if (hasIncompleteNodes()) { debug("E level"); connectElevels(); }       // Establish E level connections if found
         displayGrid("\n", 2, "\n");     
         // Conserve lists for reverting their states if necessary
         debug(hasIncompleteNodes() ? ">> conserving state of nodes,relations and output" : "done!");
@@ -93,8 +94,25 @@ class Player {
         System.out.println(output.toString());                  // neighbors, number of links connecting them
     } // main() -------------------------------------------------------------------------------------------------
 
-    // C: Establish actual C level connections - connect
-    // those nodes that only one incomplete relation left
+    // E: Connect second link to neighbors of such nodes that
+    // 2 neighbors left with 1-1 missing links
+    static void connectElevels() {
+        for (Node node : nodes) {
+            if (node.missingLinks() == 2) {
+                ArrayList<Relation> rels = new ArrayList<>();
+                for (Relation relation : relations) {
+                    if (relation.hasNode(node) && !relation.isComplete() && relation.getLinks() == 1) {
+                        rels.add(relation);
+                    }
+                }
+                if (rels.size() == 2) { 
+                    debug("E: second link could be connected to:", rels);
+                }
+            }
+        }
+    }
+
+    // C: Connect nodes that only one incomplete relation left
     static void connectClevels(boolean canDisplayGrid) {
         boolean connect;
         do {
@@ -127,8 +145,7 @@ class Player {
         } while (connect);                                      // Until connection ocured
     }
 
-    // Complete first incomplete relation of node
-    // by connecting it with maximum number of links
+    // D: Complete relation of node with maximum number of links
     static void connectDlevel(Node node, Relation relation) {
         debug("connecting " + relation);
         Node neighbor = relation.getNeighbor(node);
@@ -181,7 +198,7 @@ class Player {
         return cross;
     } // crossAlink()
 
-    // A,B: Establish all level A and B connections - this method should run only once
+    // A,B: Connect nodes where single or double links possible to all neighbors
     static void connectABlevels() {
         boolean connect;
         do {
@@ -299,7 +316,6 @@ class Player {
         }
         return result;         
     }
-
 
     // Return incomplete relations of node or empty list if none found
     static ArrayList<Relation> getIncompleteRelationsOf(Node node) {

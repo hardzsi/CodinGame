@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1018e (Tests 1-10 passed) 70%
+// APU:Improvement Phase 1018f (Tests 1-10 passed) 70%
 import java.util.*;
 
 class Player {
@@ -45,6 +45,7 @@ class Player {
         connectABlevels();                                      // Establish level A and B connections (run once)
         if (hasIncompleteNodes()) { debug("C level"); connectClevels(false); }  // Establish possible C level connections
         if (hasIncompleteNodes()) { debug("E level"); connectElevels(); }       // Establish possible E level connections
+        if (hasIncompleteNodes()) { debug("F level"); connectFlevels(); }       // Establish possible F level connections
         displayGrid("\n", 2, "\n");     
         // Conserve lists for reverting their states if necessary
         debug(hasIncompleteNodes() ? ">> conserving state of nodes,relations and output" : "done!");
@@ -94,6 +95,25 @@ class Player {
         System.out.println(output.toString());                  // neighbors, number of links connecting them
     } // main() ------------------------------------------------------------------------------------------------------
 
+    // F: Connect nodes with 3+ aimed links that
+    // 2 non-crossed, unlinked relations left
+    static void connectFlevels() {
+        for (Node node : nodes) {
+            if (!node.isComplete() && node.aimedLinks() >= 3) {
+                ArrayList<Relation> rels = new ArrayList<>();
+                for (Relation relation : relations) {
+                    if (relation.hasNode(node) && !relation.isComplete() &&
+                      !isCrossed(relation) && relation.isUnlinked()) {
+                        rels.add(relation);
+                    }
+                }
+                if (rels.size() == 2) {
+                    debug("F: connectables found:", rels);
+                }
+            }
+        }
+    }
+
     // E: Connect second link to relations of such nodes
     // that 2 relations left with 1-1 missing link
     static void connectElevels() {
@@ -137,16 +157,16 @@ class Player {
             // relation left. Note: list empty if no such found
             ArrayList<Node> singleIncompleteRelationNodes = new ArrayList<>();
             for (Node node : getIncompleteNodes()) {
-                if (getIncompleteNonCrossingRelationsOf(node).size() == 1) {
+                if (getIncompleteNonCrossedRelationsOf(node).size() == 1) {
                     singleIncompleteRelationNodes.add(node);    // Add node only if it has 1 incomp.non-crossing relation
                 }
             }
             if (!singleIncompleteRelationNodes.isEmpty()) {
                 Node node = singleIncompleteRelationNodes.get(0); // Pick first node
                 Relation relation =
-                    getIncompleteNonCrossingRelationsOf(node).get(0); // Should be only one
-                if (!isCrossing(relation)) {                    // Connect if relation does NOT cross a link
-                    debug("connecting " + relation);
+                    getIncompleteNonCrossedRelationsOf(node).get(0); // Should be only one
+                if (!isCrossed(relation)) {                    // Connect if relation does NOT cross a link
+                    //debug("connecting " + relation);
                     Node neighbor = relation.getNeighbor(node);
                     int relationLinks = relation.getLinks();
                     int increment = (int)Math.min(Math.min      // Determine possible link increment,limiting it to 2
@@ -184,7 +204,7 @@ class Player {
     }
 
     // Return true if relation crosses a single or double link
-    static boolean isCrossing(Relation rel) {
+    static boolean isCrossed(Relation rel) {
         if (!rel.isCrossable()) { return false; }
         ArrayList<Relation> checkRelations = new ArrayList<>(relations);
         boolean cross = false;
@@ -251,9 +271,9 @@ class Player {
     // Increment links of specified node, all its neighbors
     // and connections to the specified value
     static void incrementLinksTo(int increment, Node node) {
-        debug((node.aimedLinks() % 2 == 0 ? "A" : "B") + " found " +
+        /*debug((node.aimedLinks() % 2 == 0 ? "A" : "B") + " found " +
             node.aimedLinks() + "," + node.neighbors() + "," + increment +
-            " [aim,nb,inc] in node:" + node);
+            " [aim,nb,inc] in node:" + node);*/
         // Determine incomplete relations of node that have less links than increment
         ArrayList<Relation> specifiedRelations = new ArrayList<>(); // NOTE: may remains empty if not found such ones
         for (Relation relation : relations) {
@@ -321,13 +341,13 @@ class Player {
         return result;
     }
 
-    // Return incomplete non-crossing relations
+    // Return incomplete non-crossed relations
     // of node - or empty list if none found
-    static ArrayList<Relation> getIncompleteNonCrossingRelationsOf(Node node) {
+    static ArrayList<Relation> getIncompleteNonCrossedRelationsOf(Node node) {
         ArrayList<Relation> result = new ArrayList<>();
         for (Relation relation : relations) {
             if (relation.hasNode(node) && !relation.isComplete() &&
-              !isCrossing(relation)) {
+              !isCrossed(relation)) {
                 result.add(relation);
             }
         }
@@ -340,7 +360,7 @@ class Player {
         ArrayList<Relation> result = new ArrayList<>();
         for (Relation relation : relations) {
             if (relation.hasNode(node) && !relation.isComplete() &&
-              !isCrossing(relation) && !checked.contains(relation)) {
+              !isCrossed(relation) && !checked.contains(relation)) {
                 result.add(relation);
             }
         }

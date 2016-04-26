@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1017d (Tests 1-7,9,10 passed) 62%
+// APU:Improvement Phase 1018a (Tests 1-7,9,10 passed) 62%
 import java.util.*;
 
 class Player {
@@ -94,19 +94,35 @@ class Player {
         System.out.println(output.toString());                  // neighbors, number of links connecting them
     } // main() -------------------------------------------------------------------------------------------------
 
-    // E: Connect second link to neighbors of such nodes that
-    // 2 neighbors left with 1-1 missing links
+    // E: Connect second link to relations of such nodes
+    // that 2 relations left with 1-1 missing link
     static void connectElevels() {
         for (Node node : nodes) {
-            if (node.missingLinks() == 2) {
-                ArrayList<Relation> rels = new ArrayList<>();
+            if (node.missingLinks() == 2) {                     // Find nodes having 2 missing links - Note: these nodes
+                                                                // can have 1-4 incomplete relation(s) with 0 or 1 link
+                ArrayList<Relation> rels = new ArrayList<>();   // Collect nodes' all incomplete relations having 1 link
                 for (Relation relation : relations) {
-                    if (relation.hasNode(node) && !relation.isComplete() && relation.getLinks() == 1) {
+                    if (relation.hasNode(node) && !relation.isComplete() &&
+                            relation.getLinks() == 1) {
                         rels.add(relation);
                     }
                 }
-                if (rels.size() == 2) { 
-                    debug("E: second link could be connected to:", rels);
+                if (rels.size() == 2) {                         // Found a node that 2 rels left with 1-1 link
+                    Relation relationA = rels.get(0);
+                    Node neighborA = relationA.getNeighbor(node);
+                    Relation relationB = rels.get(1);
+                    Node neighborB = relationB.getNeighbor(node);
+                    debug("connecting " + relationA);
+                    debug("E out:" + relationA.asOutputString());
+                    output.append(relationA.asOutputString()).append("\n");
+                    debug("connecting " + relationB);
+                    debug("E out:" + relationB.asOutputString());
+                    output.append(relationB.asOutputString()).append("\n");
+                    node.setLinks(node.links() + 2);            // Should be equals to: node.setLinks(node.aimedLinks());
+                    neighborA.setLinks(neighborA.links() + 1);
+                    neighborB.setLinks(neighborB.links() + 1);
+                    relationA.setLinks(2);
+                    relationB.setLinks(2);
                 }
             }
         }

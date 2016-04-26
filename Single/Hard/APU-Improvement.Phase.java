@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1018h (Tests 1-10 passed) 70%
+// APU:Improvement Phase 1018i (Tests 1-10 passed) 70%
 import java.util.*;
 
 class Player {
@@ -33,7 +33,7 @@ class Player {
         nodes.add(new Node(4,5,5));nodes.add(new Node(4,6,7));nodes.add(new Node(4,7,5));nodes.add(new Node(5,5,2));
         nodes.add(new Node(5,7,1));nodes.add(new Node(6,0,2));nodes.add(new Node(7,2,2));nodes.add(new Node(7,5,3));
         nodes.add(new Node(7,6,4));nodes.add(new Node(7,7,2));*/
-        displayGrid("\n", 1, "\n");                             // Display grid of nodes with aimed number of links
+        if (gridXY[1] < 10) { displayGrid("\n", 1, "\n"); }     // Display grid of nodes with aimed number of links
         collectRelations(nodes.get(0));                         // Fill relations list collecting relations recursively
         initNodeNeighbors();                                    // Set neighbors for all nodes
         //debug("\nnodes:", nodes); debug("");
@@ -49,8 +49,9 @@ class Player {
             if (hasIncompleteNodes()) { debug("C level"); connections += connectClevels(false); }
             if (hasIncompleteNodes()) { debug("E level"); connections += connectElevels(); }
             if (hasIncompleteNodes()) { debug("F level"); connections += connectFlevels(); }
-            debug(connections + " connections established at C+E+F levels: " +
-                    (connections > 0 ? "new C-E-F round" : "moving ahead"));
+            if (hasIncompleteNodes()) { debug("G level"); connections += connectGlevels(); }
+            debug(connections + " connections established at C+E+F+G levels: " +
+                    (connections > 0 ? "new C-E-F-G round" : "moving ahead"));
         } while (connections > 0);
 
         displayGrid("\n", 2, "\n");     
@@ -102,13 +103,57 @@ class Player {
         System.out.println(output.toString());                  // neighbors, number of links connecting them
     } // main() ------------------------------------------------------------------------------------------------------
 
-    // F: Connect single link to non-linked nodes with 3+ aimed
-    // links that 2 non-crossed, unlinked relations left
+    // G: 5-3-1 Connect single link to non-linked nodes with 5
+    // aimed links that has 3 non-crossed, unlinked relations left
+    // Return number of established connections
+    static int connectGlevels() {
+        int connections = 0;
+        for (Node node : nodes) {
+            if (!node.isComplete() && node.aimedLinks() == 5 && node.isUnlinked()) {
+                ArrayList<Relation> rels = new ArrayList<>();
+                for (Relation relation : relations) {
+                    if (relation.hasNode(node) && !relation.isComplete() &&
+                      !isCrossed(relation) && relation.isUnlinked()) {
+                        rels.add(relation);
+                    }
+                }
+                if (rels.size() == 3) {                         // Let's connect the 3 neighbors with 1-1 link
+                    Relation relationA = rels.get(0);
+                    Node neighborA = relationA.getNeighbor(node);
+                    Relation relationB = rels.get(1);
+                    Node neighborB = relationB.getNeighbor(node);
+                    Relation relationC = rels.get(2);
+                    Node neighborC = relationC.getNeighbor(node);
+                    relationA.setLinks(1);                      // Set nodes' relations
+                    relationB.setLinks(1);
+                    relationC.setLinks(1);
+                    //debug("connecting " + relationA);
+                    debug("G out:" + relationA.asOutputString());
+                    output.append(relationA.asOutputString()).append("\n");
+                    //debug("connecting " + relationB);
+                    debug("G out:" + relationB.asOutputString());
+                    output.append(relationB.asOutputString()).append("\n");
+                    //debug("connecting " + relationC);
+                    debug("G out:" + relationC.asOutputString());
+                    output.append(relationC.asOutputString()).append("\n");
+                    node.setLinks(node.links() + 3);            // Set node and its neighbors
+                    neighborA.setLinks(neighborA.links() + 1);
+                    neighborB.setLinks(neighborB.links() + 1);
+                    neighborC.setLinks(neighborC.links() + 1);
+                    connections += 3;
+                }
+            }
+        }
+        return connections;
+    }
+
+    // F: 3-2-1 Connect single link to non-linked nodes with 3
+    // aimed links that has 2 non-crossed, unlinked relations left
     // Return number of established connections
     static int connectFlevels() {
         int connections = 0;
         for (Node node : nodes) {
-            if (!node.isComplete() && node.aimedLinks() >= 3 && node.isUnlinked()) {
+            if (!node.isComplete() && node.aimedLinks() == 3 && node.isUnlinked()) {
                 ArrayList<Relation> rels = new ArrayList<>();
                 for (Relation relation : relations) {
                     if (relation.hasNode(node) && !relation.isComplete() &&
@@ -122,7 +167,7 @@ class Player {
                     Relation relationB = rels.get(1);
                     Node neighborB = relationB.getNeighbor(node);
                     relationA.setLinks(1);                      // Set nodes' relations
-                    relationB.setLinks(1);                  
+                    relationB.setLinks(1);
                     //debug("connecting " + relationA);
                     debug("F out:" + relationA.asOutputString());
                     output.append(relationA.asOutputString()).append("\n");

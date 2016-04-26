@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1018b (Tests 1-10 passed) 70%
+// APU:Improvement Phase 1018c (Tests 1-10 passed) 70%
 import java.util.*;
 
 class Player {
@@ -267,15 +267,6 @@ class Player {
         }
     }
 
-    // Return first incomplete relation from 'relations'
-    // list that contains node or null if node not found
-    static Relation getFirstIncompleteRelation(Node node) {
-        for (Relation relation : relations) {
-            if (!relation.isComplete() && relation.hasNode(node)) { return relation; }
-        }
-        return null;
-    }
-
     // Return first incomplete node that match aimed links and neighbors
     // and has at least one nonlinked relation - or null if not found such
     static Node getMatchingNode(int aimed, int neighbors, int increment) {
@@ -310,15 +301,6 @@ class Player {
         }
         return result;
     }
-
-    // Return incomplete relations - or empty list if none found
-     static ArrayList<Relation> getIncompleteRelations() {
-        ArrayList<Relation> result = new ArrayList<>();
-        for (Relation relation : relations) {
-            if (!relation.isComplete()) { result.add(relation); }
-        }
-        return result;        
-    }  
 
     // Return true if a node has at least one unlinked relation
     static boolean hasUnlinkedRelationOf(Node node) {

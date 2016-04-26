@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1018c (Tests 1-10 passed) 70%
+// APU:Improvement Phase 1018d (Tests 1-10 passed) 70%
 import java.util.*;
 
 class Player {
@@ -133,9 +133,16 @@ class Player {
         boolean connect;
         do {
             connect = false;
-            if (!getSingleIncompleteRelationNodes().isEmpty()) {
-                Node node =
-                    getSingleIncompleteRelationNodes().get(0);  // Pick first node
+            // Collect incomplete nodes that only one incomplete
+            // relation left. Note: list empty if no such found
+            ArrayList<Node> singleIncompleteRelationNodes = new ArrayList<>();
+            for (Node node : getIncompleteNodes()) {
+                if (getIncompleteRelationsOf(node).size() == 1) {// Add node only if it has one incomplete relation
+                    singleIncompleteRelationNodes.add(node);
+                }
+            }
+            if (!singleIncompleteRelationNodes.isEmpty()) {
+                Node node = singleIncompleteRelationNodes.get(0); // Pick first node
                 Relation relation =
                     getIncompleteRelationsOf(node).get(0);      // Should be only one
                 if (!isCrossing(relation)) {                    // Connect if relation does NOT cross a link
@@ -333,18 +340,6 @@ class Player {
             if (relation.hasNode(node) && !relation.isComplete() &&
                 !isCrossing(relation) && !checked.contains(relation)) {
                 result.add(relation);
-            }
-        }
-        return result;
-    }
-
-    // Return those incomplete nodes from 'nodes' that only one
-    // incomplete relation left -- or empty list if no such
-    static ArrayList<Node> getSingleIncompleteRelationNodes() {
-        ArrayList<Node> result = new ArrayList<>();
-        for (Node node : getIncompleteNodes()) {
-            if (getIncompleteRelationsOf(node).size() == 1) {   // Add node only if it has one incomplete relation
-                result.add(node);
             }
         }
         return result;

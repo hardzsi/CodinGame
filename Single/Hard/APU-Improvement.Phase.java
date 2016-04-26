@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1018d (Tests 1-10 passed) 70%
+// APU:Improvement Phase 1018e (Tests 1-10 passed) 70%
 import java.util.*;
 
 class Player {
@@ -92,7 +92,7 @@ class Player {
         }
         debug("output:");                                       // Two coords and an int: a node, one of its
         System.out.println(output.toString());                  // neighbors, number of links connecting them
-    } // main() --------------------------------------------------------------------------------------------------------
+    } // main() ------------------------------------------------------------------------------------------------------
 
     // E: Connect second link to relations of such nodes
     // that 2 relations left with 1-1 missing link
@@ -137,14 +137,14 @@ class Player {
             // relation left. Note: list empty if no such found
             ArrayList<Node> singleIncompleteRelationNodes = new ArrayList<>();
             for (Node node : getIncompleteNodes()) {
-                if (getIncompleteRelationsOf(node).size() == 1) {// Add node only if it has one incomplete relation
-                    singleIncompleteRelationNodes.add(node);
+                if (getIncompleteNonCrossingRelationsOf(node).size() == 1) {
+                    singleIncompleteRelationNodes.add(node);    // Add node only if it has 1 incomp.non-crossing relation
                 }
             }
             if (!singleIncompleteRelationNodes.isEmpty()) {
                 Node node = singleIncompleteRelationNodes.get(0); // Pick first node
                 Relation relation =
-                    getIncompleteRelationsOf(node).get(0);      // Should be only one
+                    getIncompleteNonCrossingRelationsOf(node).get(0); // Should be only one
                 if (!isCrossing(relation)) {                    // Connect if relation does NOT cross a link
                     debug("connecting " + relation);
                     Node neighbor = relation.getNeighbor(node);
@@ -321,11 +321,13 @@ class Player {
         return result;
     }
 
-    // Return incomplete relations of node or empty list if none found
-    static ArrayList<Relation> getIncompleteRelationsOf(Node node) {
+    // Return incomplete non-crossing relations
+    // of node - or empty list if none found
+    static ArrayList<Relation> getIncompleteNonCrossingRelationsOf(Node node) {
         ArrayList<Relation> result = new ArrayList<>();
         for (Relation relation : relations) {
-            if (relation.hasNode(node) && !relation.isComplete()) {
+            if (relation.hasNode(node) && !relation.isComplete() &&
+              !isCrossing(relation)) {
                 result.add(relation);
             }
         }
@@ -338,7 +340,7 @@ class Player {
         ArrayList<Relation> result = new ArrayList<>();
         for (Relation relation : relations) {
             if (relation.hasNode(node) && !relation.isComplete() &&
-                !isCrossing(relation) && !checked.contains(relation)) {
+              !isCrossing(relation) && !checked.contains(relation)) {
                 result.add(relation);
             }
         }

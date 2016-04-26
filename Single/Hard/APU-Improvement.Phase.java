@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1017b (Tests 1-7,9,10 passed) 62%
+// APU:Improvement Phase 1017c (Tests 1-7,9,10 passed) 62%
 import java.util.*;
 
 class Player {
@@ -61,8 +61,9 @@ class Player {
                 output.setLength(0); output.append(outputClone);
                 nodes = copyNodes(nodesClone);
                 relations = copyRelations(relationsClone, nodes);
-
-                // START YOUR ENGINES!
+                // #########
+                // # START #
+                // #########
                 Node node = null;                               // Checkable node
                 Relation relation = null;                       // Checkable relation
                 for (int missing = 1; missing < 7 && node == null; ++missing) {
@@ -81,7 +82,7 @@ class Player {
                     }
                 }
                 if (node == null) { output.append("FUCK!!! There are no more nodes to check"); break; }
-                debug("D level"); connectDlevel(node, relation);// Complete first incomplete relation of node
+                debug("D level"); connectDlevel(node, relation); // Complete an incomplete non-crossing relation of node
                 debug("C level"); connectClevels(false);         // Establish new C level connections
                 if (hasIncompleteNodes()) { debug("incomplete nodes remained - try again with another..."); }
             } else {
@@ -129,24 +130,18 @@ class Player {
     // Complete first incomplete relation of node
     // by connecting it with maximum number of links
     static void connectDlevel(Node node, Relation relation) {
-        //Relation relation = getFirstIncompleteRelation(node);   // this may be faster than getIncompleteRelationsOf()...
-        //Relation relation = getIncompleteRelationsOf(node).get(0);
-        if (!crossAlink(relation)) {                            // Connect if relation does NOT cross a link
-            debug("connecting " + relation);
-            Node neighbor = relation.getNeighbor(node);
-            int relationLinks = relation.getLinks();
-            int increment = (int)Math.min(Math.min              // Determine possible link increment,limiting it to 2
-                (node.missingLinks(), neighbor.missingLinks()), 2 - relationLinks);
-            node.setLinks(node.links() + increment);
-            neighbor.setLinks(neighbor.links() + increment);
-            relation.setLinks(increment);                       // One of its nodes become complete, so does relation
-            debug("D out:" + relation.asOutputString());
-            output.append(relation.asOutputString()).append("\n");
-            relation.setLinks(relationLinks + increment);       // Should be complete and removed at the end
-            //displayGrid("", 2, "\n");
-        } else {
-            debug("D does NOT connect, crossing found for " + relation);
-        }
+        debug("connecting " + relation);
+        Node neighbor = relation.getNeighbor(node);
+        int relationLinks = relation.getLinks();
+        int increment = (int)Math.min(Math.min                  // Determine possible link increment,limiting it to 2
+            (node.missingLinks(), neighbor.missingLinks()), 2 - relationLinks);
+        node.setLinks(node.links() + increment);
+        neighbor.setLinks(neighbor.links() + increment);
+        relation.setLinks(increment);                           // One of its nodes become complete, so does relation
+        debug("D out:" + relation.asOutputString());
+        output.append(relation.asOutputString()).append("\n");
+        relation.setLinks(relationLinks + increment);           // Should be complete and removed at the end
+        //displayGrid("", 2, "\n");
     }
 
     // Return true if relation crosses a single or double link

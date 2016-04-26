@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1018f (Tests 1-10 passed) 70%
+// APU:Improvement Phase 1018g (Tests 1-10 passed) 70%
 import java.util.*;
 
 class Player {
@@ -95,11 +95,11 @@ class Player {
         System.out.println(output.toString());                  // neighbors, number of links connecting them
     } // main() ------------------------------------------------------------------------------------------------------
 
-    // F: Connect nodes with 3+ aimed links that
-    // 2 non-crossed, unlinked relations left
+    // F: Connect single link to non-linked nodes with 3+ aimed
+    // links that 2 non-crossed, unlinked relations left
     static void connectFlevels() {
         for (Node node : nodes) {
-            if (!node.isComplete() && node.aimedLinks() >= 3) {
+            if (!node.isComplete() && node.aimedLinks() >= 3 && node.isUnlinked()) {
                 ArrayList<Relation> rels = new ArrayList<>();
                 for (Relation relation : relations) {
                     if (relation.hasNode(node) && !relation.isComplete() &&
@@ -107,8 +107,22 @@ class Player {
                         rels.add(relation);
                     }
                 }
-                if (rels.size() == 2) {
-                    debug("F: connectables found:", rels);
+                if (rels.size() == 2) {                         // Let's connect both neighbors with 1-1 link
+                    Relation relationA = rels.get(0);
+                    Node neighborA = relationA.getNeighbor(node);
+                    Relation relationB = rels.get(1);
+                    Node neighborB = relationB.getNeighbor(node);
+                    relationA.setLinks(1);                      // Set nodes' relations
+                    relationB.setLinks(1);                  
+                    debug("connecting " + relationA);
+                    debug("F out:" + relationA.asOutputString());
+                    output.append(relationA.asOutputString()).append("\n");
+                    debug("connecting " + relationB);
+                    debug("F out:" + relationB.asOutputString());
+                    output.append(relationB.asOutputString()).append("\n");
+                    node.setLinks(node.links() + 2);            // Set node and both its neighbors
+                    neighborA.setLinks(neighborA.links() + 1);
+                    neighborB.setLinks(neighborB.links() + 1);
                 }
             }
         }
@@ -540,6 +554,7 @@ class Node {
     public int  missingLinks()           { return aimedLinks - links; }
     public int  neighbors()              { return neighbors; }
     public boolean isComplete()          { return links == aimedLinks; }
+    public boolean isUnlinked()          { return links == 0; }
     public void setLinks(int actual)     { links = actual; }
     public void setAimedLinks(int aimed) { aimedLinks = aimed; }
     public void setNeighbors(int n)      { neighbors = n; }

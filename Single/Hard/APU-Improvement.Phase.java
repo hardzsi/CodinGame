@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1018g (Tests 1-10 passed) 70%
+// APU:Improvement Phase 1018h (Tests 1-10 passed) 70%
 import java.util.*;
 
 class Player {
@@ -43,9 +43,16 @@ class Player {
         // ################################################### Logic #####################################################
         // ###############################################################################################################
         connectABlevels();                                      // Establish level A and B connections (run once)
-        if (hasIncompleteNodes()) { debug("C level"); connectClevels(false); }  // Establish possible C level connections
-        if (hasIncompleteNodes()) { debug("E level"); connectElevels(); }       // Establish possible E level connections
-        if (hasIncompleteNodes()) { debug("F level"); connectFlevels(); }       // Establish possible F level connections
+        int connections;
+        do {                                                    // Establish possible C, E and F level connections
+            connections = 0;                                    // until there was new connection at any level
+            if (hasIncompleteNodes()) { debug("C level"); connections += connectClevels(false); }
+            if (hasIncompleteNodes()) { debug("E level"); connections += connectElevels(); }
+            if (hasIncompleteNodes()) { debug("F level"); connections += connectFlevels(); }
+            debug(connections + " connections established at C+E+F levels: " +
+                    (connections > 0 ? "new C-E-F round" : "moving ahead"));
+        } while (connections > 0);
+
         displayGrid("\n", 2, "\n");     
         // Conserve lists for reverting their states if necessary
         debug(hasIncompleteNodes() ? ">> conserving state of nodes,relations and output" : "done!");
@@ -97,7 +104,9 @@ class Player {
 
     // F: Connect single link to non-linked nodes with 3+ aimed
     // links that 2 non-crossed, unlinked relations left
-    static void connectFlevels() {
+    // Return number of established connections
+    static int connectFlevels() {
+        int connections = 0;
         for (Node node : nodes) {
             if (!node.isComplete() && node.aimedLinks() >= 3 && node.isUnlinked()) {
                 ArrayList<Relation> rels = new ArrayList<>();
@@ -114,23 +123,27 @@ class Player {
                     Node neighborB = relationB.getNeighbor(node);
                     relationA.setLinks(1);                      // Set nodes' relations
                     relationB.setLinks(1);                  
-                    debug("connecting " + relationA);
+                    //debug("connecting " + relationA);
                     debug("F out:" + relationA.asOutputString());
                     output.append(relationA.asOutputString()).append("\n");
-                    debug("connecting " + relationB);
+                    //debug("connecting " + relationB);
                     debug("F out:" + relationB.asOutputString());
                     output.append(relationB.asOutputString()).append("\n");
                     node.setLinks(node.links() + 2);            // Set node and both its neighbors
                     neighborA.setLinks(neighborA.links() + 1);
                     neighborB.setLinks(neighborB.links() + 1);
+                    connections += 2;
                 }
             }
         }
+        return connections;
     }
 
     // E: Connect second link to relations of such nodes
     // that 2 relations left with 1-1 missing link
-    static void connectElevels() {
+    // Return number of established connections
+    static int connectElevels() {
+        int connections = 0;
         for (Node node : nodes) {
             if (node.missingLinks() == 2) {                     // Find nodes having 2 missing links - Note: these nodes
                                                                 // can have 1-4 incomplete relation(s) with 0 or 1 link
@@ -157,14 +170,18 @@ class Player {
                     neighborB.setLinks(neighborB.links() + 1);
                     relationA.setLinks(2);
                     relationB.setLinks(2);
+                    connections += 2;
                 }
             }
         }
+        return connections;
     }
 
     // C: Connect nodes that only one incomplete relation left
-    static void connectClevels(boolean canDisplayGrid) {
+    // Return number of established connections    
+    static int connectClevels(boolean canDisplayGrid) {
         boolean connect;
+        int connections = 0;
         do {
             connect = false;
             // Collect incomplete nodes that only one incomplete
@@ -179,27 +196,23 @@ class Player {
                 Node node = singleIncompleteRelationNodes.get(0); // Pick first node
                 Relation relation =
                     getIncompleteNonCrossedRelationsOf(node).get(0); // Should be only one
-                if (!isCrossed(relation)) {                    // Connect if relation does NOT cross a link
-                    //debug("connecting " + relation);
-                    Node neighbor = relation.getNeighbor(node);
-                    int relationLinks = relation.getLinks();
-                    int increment = (int)Math.min(Math.min      // Determine possible link increment,limiting it to 2
-                        (node.missingLinks(), neighbor.missingLinks()), 2 - relationLinks);
-                    node.setLinks(node.links() + increment);
-                    neighbor.setLinks(neighbor.links() + increment);
-                    relation.setLinks(increment);
-                    debug("C out:" + relation.asOutputString());
-                    output.append(relation.asOutputString()).append("\n");
-                    relation.setLinks(relationLinks + increment);// This should be complete and removed at the end
-                    connect = true;
-                    if (canDisplayGrid) { displayGrid("", 2, "\n"); }
-                } else {
-                    debug("C does NOT connect, crossing found for " + relation);
-                }
-            } else {
-                debug("single incomplete relation nodes is empty - no connection");
+                //debug("connecting " + relation);
+                Node neighbor = relation.getNeighbor(node);
+                int relationLinks = relation.getLinks();
+                int increment = (int)Math.min(Math.min          // Determine possible link increment,limiting it to 2
+                    (node.missingLinks(), neighbor.missingLinks()), 2 - relationLinks);
+                node.setLinks(node.links() + increment);
+                neighbor.setLinks(neighbor.links() + increment);
+                relation.setLinks(increment);
+                debug("C out:" + relation.asOutputString());
+                output.append(relation.asOutputString()).append("\n");
+                relation.setLinks(relationLinks + increment);   // This should be complete and removed at the end
+                connect = true;
+                connections++;
+                if (canDisplayGrid) { displayGrid("", 2, "\n"); }
             }
         } while (connect);                                      // Until connection occured
+        return connections;
     }
 
     // D: Complete relation of node with maximum number of links

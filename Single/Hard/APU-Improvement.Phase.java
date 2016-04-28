@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1019a (Tests 1-10 passed, Expert:94 steps) 70%
+// APU:Improvement Phase 1020a (Tests 1-10 passed, Expert:94 steps) 70%
 import java.util.*;
 
 class Player {
@@ -43,17 +43,7 @@ class Player {
         // ################################################### Logic #####################################################
         // ###############################################################################################################
         connectABlevels();                                      // Establish level A and B connections (run once)
-        int connections;
-        do {                                                    // Establish possible C, E and F level connections
-            connections = 0;                                    // until there is at least 1 new connection at any level
-            if (hasIncompleteNodes()) { connections += connectClevels(false); }
-            if (hasIncompleteNodes()) { connections += connectElevels(false); }
-            if (hasIncompleteNodes()) { connections += connectFlevels(3, 2, false); }
-            if (hasIncompleteNodes()) { connections += connectFlevels(5, 3, false); }
-            debug(connections + " connections established at C+E+F levels: " +
-                    (connections > 0 ? "new C-E-F round" : "moving ahead"));
-        } while (connections > 0);
-
+        connectCEFlevels(false);                                // Establish all possible C, E and F level connections
         //displayGrid("\n", 2, "\n");     
         // Conserve lists for reverting their states if necessary
         debug(hasIncompleteNodes() ? ">> conserving state of nodes,relations and output" : "done!");
@@ -91,20 +81,11 @@ class Player {
                     }
                 }
                 if (node == null) { output.append("FUCK!!! There are no more nodes to check"); break; }
-                connectDlevel(node, relation);                  // Complete an incomplete non-crossing relation of node            
-                //connectClevels(false);                        // Establish possible new C level connections
-                do {                                            // Establish possible C, E and F level connections
-                    connections = 0;                            // until there was new connection at any level
-                    if (hasIncompleteNodes()) { connections += connectClevels(true); }
-                    if (hasIncompleteNodes()) { connections += connectElevels(true); }
-                    if (hasIncompleteNodes()) { connections += connectFlevels(3, 2, true); }
-                    if (hasIncompleteNodes()) { connections += connectFlevels(5, 3, true); }
-                    debug(connections + " connections established at C+E+F levels: " +
-                            (connections > 0 ? "new C-E-F round" : "moving ahead"));
-                } while (connections > 0);
+                connectDlevel(node, relation, true);            // Complete an incomplete non-crossing relation of node            
+                connectCEFlevels(true);                         // Establish all possible C, E and F level connections
                 if (hasIncompleteNodes()) {
-                    //debug(getIncompleteNodes().size() + " incomplete nodes remained - Try with other relations...");
-                    debug("incomplete nodes remained:", getIncompleteNodes());
+                    debug(getIncompleteNodes().size() + " incomplete nodes remained");
+                    //debug("incomplete nodes remained:", getIncompleteNodes());
                     debug("stuck nodes remained:", getStuckNodes());
                 }
             } else {
@@ -114,6 +95,21 @@ class Player {
         debug("output:");                                       // Two coords and an int: a node, one of its
         System.out.println(output.toString());                  // neighbors, number of links connecting them
     } // main() ------------------------------------------------------------------------------------------------------
+
+    // C-E-F: Establish possible C, E and F level connections
+    // until there is at least 1 new connection at any level
+    static void connectCEFlevels(boolean canDisplay) {
+        int connections;
+        do {
+            connections = 0;
+            if (hasIncompleteNodes()) { connections += connectClevels(canDisplay); }
+            if (hasIncompleteNodes()) { connections += connectElevels(canDisplay); }
+            if (hasIncompleteNodes()) { connections += connectFlevels(3, 2, canDisplay); }
+            if (hasIncompleteNodes()) { connections += connectFlevels(5, 3, canDisplay); }
+            debug("C+E+F levels: " + connections + " connections established - " +
+                    (connections > 0 ? "new C-E-F round" : "moving ahead"));
+        } while (connections > 0);
+    }
 
     // F: Connect single link to non-linked nodes with 'aimed' aimed
     // links that has 'unlinked' non-crossed, unlinked relations left
@@ -186,6 +182,22 @@ class Player {
         return connections;
     }
 
+    // D: Complete relation of node with maximum number of links
+    static void connectDlevel(Node node, Relation relation, boolean canDisplay) {
+        //if (canDisplay) { debug("D level"); }
+        //debug("connecting " + relation);
+        Node neighbor = relation.getNeighbor(node);
+        int relationLinks = relation.getLinks();
+        int increment = (int)Math.min(Math.min                  // Determine possible link increment,limiting it to 2
+            (node.missingLinks(), neighbor.missingLinks()), 2 - relationLinks);
+        node.setLinks(node.links() + increment);
+        neighbor.setLinks(neighbor.links() + increment);
+        relation.setLinks(increment);                           // One of its nodes become complete, so does relation
+        if (canDisplay) { debug("D out:" + relation.asOutputString()); }
+        output.append(relation.asOutputString()).append("\n");
+        relation.setLinks(relationLinks + increment);           // Should be complete and removed at the end
+    }
+
     // C: Connect nodes that only one incomplete relation left
     // Return number of established connections    
     static int connectClevels(boolean canDisplay) {
@@ -224,20 +236,32 @@ class Player {
         return connections;
     }
 
-    // D: Complete relation of node with maximum number of links
-    static void connectDlevel(Node node, Relation relation) {
-        debug("D level");
-        debug("connecting " + relation);
-        Node neighbor = relation.getNeighbor(node);
-        int relationLinks = relation.getLinks();
-        int increment = (int)Math.min(Math.min                  // Determine possible link increment,limiting it to 2
-            (node.missingLinks(), neighbor.missingLinks()), 2 - relationLinks);
-        node.setLinks(node.links() + increment);
-        neighbor.setLinks(neighbor.links() + increment);
-        relation.setLinks(increment);                           // One of its nodes become complete, so does relation
-        debug("D out:" + relation.asOutputString());
-        output.append(relation.asOutputString()).append("\n");
-        relation.setLinks(relationLinks + increment);           // Should be complete and removed at the end
+    // A,B: Connect nodes where single or double links possible to all neighbors
+    static void connectABlevels() {
+        boolean connect;
+        do {
+            Node node;
+            connect = false;
+            // A: Connect nodes where double links needed to all neighbors
+            if ((node = getMatchingNode(8, 4)) != null) {   // Get 1st incomplete node matching aimed links& neighbors
+                incrementLinksTo(2, node); connect = true;      // Increment links of node,all its neighbors & connections
+            } else if ((node = getMatchingNode(6, 3)) != null) {
+                incrementLinksTo(2, node); connect = true;
+            } else if ((node = getMatchingNode(4, 2)) != null) {
+                incrementLinksTo(2, node); connect = true;
+            } else if ((node = getMatchingNode(2, 1)) != null) {
+                incrementLinksTo(2, node); connect = true;
+            // B: Connect nodes where at least single link possible to all neighbors
+            } else if ((node = getMatchingNode(7, 4)) != null) {
+                incrementLinksTo(1, node); connect = true;
+            } else if ((node = getMatchingNode(5, 3)) != null) {
+                incrementLinksTo(1, node); connect = true;
+            } else if ((node = getMatchingNode(3, 2)) != null) {
+                incrementLinksTo(1, node); connect = true;
+            } else if ((node = getMatchingNode(1, 1)) != null) {
+                incrementLinksTo(1, node); connect = true;
+            }
+        } while (connect);                                      // Until connection ocured
     }
 
     // Return true if relation crosses a single or double link
@@ -277,34 +301,6 @@ class Player {
         return cross;
     }
 
-    // A,B: Connect nodes where single or double links possible to all neighbors
-    static void connectABlevels() {
-        boolean connect;
-        do {
-            Node node;
-            connect = false;
-            // A: Connect nodes where double links needed to all neighbors
-            if ((node = getMatchingNode(8, 4, 2)) != null) {   // Get 1st incomplete node matching aimed links& neighbors
-                incrementLinksTo(2, node); connect = true;      // Increment links of node,all its neighbors & connections
-            } else if ((node = getMatchingNode(6, 3, 2)) != null) {
-                incrementLinksTo(2, node); connect = true;
-            } else if ((node = getMatchingNode(4, 2, 2)) != null) {
-                incrementLinksTo(2, node); connect = true;
-            } else if ((node = getMatchingNode(2, 1, 2)) != null) {
-                incrementLinksTo(2, node); connect = true;
-            // B: Connect nodes where at least single link possible to all neighbors
-            } else if ((node = getMatchingNode(7, 4, 1)) != null) {
-                incrementLinksTo(1, node); connect = true;
-            } else if ((node = getMatchingNode(5, 3, 1)) != null) {
-                incrementLinksTo(1, node); connect = true;
-            } else if ((node = getMatchingNode(3, 2, 1)) != null) {
-                incrementLinksTo(1, node); connect = true;
-            } else if ((node = getMatchingNode(1, 1, 1)) != null) {
-                incrementLinksTo(1, node); connect = true;
-            }
-        } while (connect);                                      // Until connection ocured
-    }
-
     // Increment links of specified node, all its neighbors
     // and connections to the specified value
     static void incrementLinksTo(int increment, Node node) {
@@ -333,7 +329,7 @@ class Player {
 
     // Return first incomplete node that match aimed links and neighbors
     // and has at least one nonlinked relation - or null if not found such
-    static Node getMatchingNode(int aimed, int neighbors, int increment) {
+    static Node getMatchingNode(int aimed, int neighbors) {
         for (Node node : nodes) {
             if (!node.isComplete() && node.aimedLinks() == aimed &&
                     node.neighbors() == neighbors && hasUnlinkedRelationOf(node)) {

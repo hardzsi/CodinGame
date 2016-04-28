@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1020b (Tests 1-10 passed, Expert:94 steps) 70%
+// APU:Improvement Phase 1020c (Tests 1-10 passed, Expert:94 steps) 70%
 import java.util.*;
 
 class Player {
@@ -150,7 +150,7 @@ class Player {
                 }
                 if (rels.size() == unlinked) {
                     node.setLinks(node.links() + unlinked);
-                    for (Relation relation : rels) {            // Let's connect node to all neighbors with 1-1 link
+                    for (Relation relation : rels) {            // Let's connect all neighbors with 1-1 link
                         relation.setLinks(1);
                         Node neighbor = relation.getNeighbor(node);
                         neighbor.setLinks(neighbor.links() + 1);
@@ -181,22 +181,16 @@ class Player {
                         rels.add(relation);
                     }
                 }
-                if (rels.size() == 2) {                         // Found a node that 2 rels left with 1-1 link
-                    Relation relationA = rels.get(0);
-                    Node neighborA = relationA.getNeighbor(node);
-                    Relation relationB = rels.get(1);
-                    Node neighborB = relationB.getNeighbor(node);
-                    //debug("connecting " + relationA);
-                    if (canDisplay) { debug("E out:" + relationA.asOutputString()); }
-                    output.append(relationA.asOutputString()).append("\n");
-                    //debug("connecting " + relationB);
-                    if (canDisplay) { debug("E out:" + relationB.asOutputString()); }
-                    output.append(relationB.asOutputString()).append("\n");
-                    node.setLinks(node.links() + 2);            // Set node and both its neighbors and relations
-                    neighborA.setLinks(neighborA.links() + 1);
-                    neighborB.setLinks(neighborB.links() + 1);
-                    relationA.setLinks(2);
-                    relationB.setLinks(2);
+                if (rels.size() == 2) {                         // Found a node that 2 relations left
+                    node.setLinks(node.links() + 2);
+                    for (Relation relation : rels) {            // Let's connect both neighbors with second link
+                        Node neighbor = relation.getNeighbor(node);
+                        //debug("connecting " + relation);
+                        if (canDisplay) { debug("E out:" + relation.asOutputString()); }
+                        output.append(relation.asOutputString()).append("\n");
+                        neighbor.setLinks(neighbor.links() + 1);
+                        relation.setLinks(2);
+                    }
                     connections += 2;
                 }
             }

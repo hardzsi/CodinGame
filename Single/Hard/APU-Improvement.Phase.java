@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1021a (Tests 1-10 passed, Expert:94 steps) 70%
+// APU:Improvement Phase 1021b (Tests 1-10 passed, Expert:94 steps) 70%
 import java.util.*;
 
 class Player {
@@ -91,6 +91,7 @@ class Player {
                 //debug("stuck nodes remained:", getStuckNodes());
             }
         }
+        
         // If still have incomplete nodes: find all incomplete nodes having 2 missing links and 2 unlinked relations.
         // Link both unlinked relations then establish possible C-E-F level connections to find out if we could finish
         if (hasIncompleteNodes()) {
@@ -99,7 +100,7 @@ class Player {
             //debug("<< reverting state of nodes, relations and output");
             output.setLength(0); output.append(outputClone);
             nodes = copyNodes(nodesClone);
-            relations = copyRelations(relationsClone, nodes);            
+            relations = copyRelations(relationsClone, nodes);
             // Collect those incomplete nodes to 'checkNodes' list
             // that have 2 missing links and 2 unlinked relations
             checkedNodes.clear();
@@ -109,12 +110,13 @@ class Player {
                     checkedNodes.add(node);
                 }
             }
-            /*for (Node node : checkedNodes) {
+            for (Node node : checkedNodes) {
                 debug("checking node:" + node);
-                // Conserve state of nodes,relations and output
+                /*// Conserve state of nodes,relations and output
                 outputClone = output.toString();
                 nodesClone = nodes;
-                relationsClone = relations;
+                relationsClone = relations;*/
+                debug("checking its relations:", getIncompleteUnlinkedRelationsOf(node));
                 // Connect both unlinked relation of node
                 for (Relation relation : getIncompleteUnlinkedRelationsOf(node)) {
                     relation.setLinks(1);
@@ -125,6 +127,8 @@ class Player {
                     output.append(relation.asOutputString()).append("\n");
                 }
                 node.setLinks(node.links() + 2);
+                debug("node after:" + node);
+                debug("relations after:", getRelationsOf(node));
                 connectCEFlevels(true);                         // Establish all possible C, E and F level connections
                 if (!hasIncompleteNodes()) {
                     debug("G level finished");
@@ -134,7 +138,7 @@ class Player {
                 output.setLength(0); output.append(outputClone);
                 nodes = copyNodes(nodesClone);
                 relations = copyRelations(relationsClone, nodes);
-            }*/
+            }
         }
         debug("output:");                                       // Two coords and an int: a node, one of its
         System.out.println(output.toString());                  // neighbors, number of links connecting them
@@ -423,6 +427,15 @@ class Player {
             if (relation.hasNode(node) && relation.isUnlinked()) {
                 result.add(node);
             }
+        }
+        return result;
+    }
+
+    // Return all relations of a node - or empty list of no such
+    static ArrayList<Relation> getRelationsOf(Node node) {
+        ArrayList<Relation> result = new ArrayList<>();
+        for (Relation relation : relations) {
+            if (relation.hasNode(node)) { result.add(relation); }
         }
         return result;
     }

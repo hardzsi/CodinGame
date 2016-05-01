@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1021b (Tests 1-10 passed, Expert:94 steps) 70%
+// APU:Improvement Phase 1022a (Tests 1-10 passed, Expert:99 steps) 70%
 import java.util.*;
 
 class Player {
@@ -46,14 +46,14 @@ class Player {
         connectCEFlevels(false);                                // Establish all possible C, E and F level connections
         //displayGrid("\n", 2, "\n");     
         // Conserve lists for reverting their states if necessary
-        //debug(hasIncompleteNodes() ? ">> conserving state of nodes,relations and output" : "done!");
+        debug(hasIncompleteNodes() ? ">> conserving state of nodes,relations and output" : "done!");
         String outputClone = output.toString();
         ArrayList<Node> nodesClone = nodes;
         ArrayList<Relation> relationsClone = relations;
 
         ArrayList<Node> checkedNodes = new ArrayList<>();       // Store nodes with missing links that were already checked
         ArrayList<Relation> checkedRels = new ArrayList<>();    // Store relations that were already checked
-        debug("\nROUND 1 started");        
+        debug("D level started");        
         while (hasIncompleteNodes()) {                          // We should establish a D level connection
             //debug("\nROUND 1 started");
             // Revert nodes, relations and output
@@ -80,7 +80,12 @@ class Player {
                 }
             }
             if (node == null) {
-                debug("ROUND 1 finished: no more nodes to check...");
+                debug("D level finished: no more nodes to check...");
+                // Revert nodes, relations and output
+                debug("<< reverting state of nodes, relations and output");
+                output.setLength(0); output.append(outputClone);
+                nodes = copyNodes(nodesClone);
+                relations = copyRelations(relationsClone, nodes);
                 break;
             }
             connectDlevel(node, relation, false);               // D: Complete an incomplete non-crossing relation of node            
@@ -96,11 +101,6 @@ class Player {
         // Link both unlinked relations then establish possible C-E-F level connections to find out if we could finish
         if (hasIncompleteNodes()) {
             debug("G level started");
-            // Revert nodes, relations and output
-            //debug("<< reverting state of nodes, relations and output");
-            output.setLength(0); output.append(outputClone);
-            nodes = copyNodes(nodesClone);
-            relations = copyRelations(relationsClone, nodes);
             // Collect those incomplete nodes to 'checkNodes' list
             // that have 2 missing links and 2 unlinked relations
             checkedNodes.clear();
@@ -111,18 +111,14 @@ class Player {
                 }
             }
             for (Node node : checkedNodes) {
-                debug("checking node:" + node);
-                /*// Conserve state of nodes,relations and output
-                outputClone = output.toString();
-                nodesClone = nodes;
-                relationsClone = relations;*/
-                debug("checking its relations:", getIncompleteUnlinkedRelationsOf(node));
+                debug("node before:" + node);
+                //debug("relations before:", getIncompleteUnlinkedRelationsOf(node));
+                debug("relations before:", getRelationsOf(node));
                 // Connect both unlinked relation of node
                 for (Relation relation : getIncompleteUnlinkedRelationsOf(node)) {
                     relation.setLinks(1);
                     Node neighbor = relation.getNeighbor(node);
                     neighbor.setLinks(neighbor.links() + 1);
-                    //debug("connecting " + relation);
                     debug("G out:" + relation.asOutputString());
                     output.append(relation.asOutputString()).append("\n");
                 }
@@ -135,6 +131,7 @@ class Player {
                     break;
                 }
                 // Revert nodes, relations and output
+                debug("<< reverting state of nodes, relations and output");
                 output.setLength(0); output.append(outputClone);
                 nodes = copyNodes(nodesClone);
                 relations = copyRelations(relationsClone, nodes);

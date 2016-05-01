@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1023b (Tests 11,12 fail) 85%
+// APU:Improvement Phase 1023c (Tests 11 fail) 92%
 import java.util.*;
 
 class Player {
@@ -13,7 +13,6 @@ class Player {
         in.nextLine();
         gridXY[1] = in.nextInt();                               // Store height
         in.nextLine();
-        // comment out for() to hack...
         for (int y = 0; y < gridXY[1]; ++y) {                   // Fill nodes list
             String line = in.nextLine();                        // Width number of chars, each: 1-8  or '.':
                                                                 // node with aimed number of links or no node
@@ -24,31 +23,26 @@ class Player {
                 }
             }
         }
-        //HACK! gridXY[0]=8; gridXY[1]=8; nodes.clear();
-        //nodes.add(new Node(0,0,3));nodes.add(new Node(0,3,1));nodes.add(new Node(1,1,1));nodes.add(new Node(1,5,3));
-        if (gridXY[1] < 10) { displayGrid("\n", 1, "\n"); }     // Display grid of nodes with aimed number of links
+        displayGrid("\n", 1, "\n");                             // Display grid of nodes with aimed number of links
         collectRelations(nodes.get(0));                         // Fill relations list collecting relations recursively
         initNodeNeighbors();                                    // Set neighbors for all nodes
-        //debug("\nnodes:", nodes); debug("");
-        //debug("relations:", relations); debug("");
-
-        // ################################################### Logic ####################################################
-        // ##############################################################################################################
-        connectTypeA();                                         // Establish type A connections (run once)
+        // #############
+        // ##  Logic  ##
+        // #############
+        connectTypeA(true);                                     // Establish type A connections (run once)
         connectTypeBCD(false);                                  // Establish all possible type B, C and D connections
         //displayGrid("\n", 2, "\n");     
         // Conserve lists for reverting their states if necessary
-        debug(hasIncompleteNodes() ? ">> conserving state of nodes,relations and output" : "done!");
         String outputClone = output.toString();
         ArrayList<Node> nodesClone = nodes;
         ArrayList<Relation> relationsClone = relations;
 
         ArrayList<Node> checkedNodes = new ArrayList<>();       // Store nodes w/ missing links that were already checked
         ArrayList<Relation> checkedRels = new ArrayList<>();    // Store relations that were already checked
-        debug("Type E started");        
+        if (hasIncompleteNodes()) { debug("Type E started"); }
         while (hasIncompleteNodes()) {                          // We should establish an E type connection
             // Revert nodes, relations and output
-            //debug("<< reverting state of nodes, relations and output");
+            debug("<< reverting state of nodes, relations and output");
             output.setLength(0); output.append(outputClone);
             nodes = copyNodes(nodesClone);
             relations = copyRelations(relationsClone, nodes);
@@ -58,7 +52,6 @@ class Player {
             for (int missing = 1; missing < 7 && node == null; ++missing) {
                 for (Node nd : getIncompleteNonCheckedNodesMissingLinks(missing, checkedNodes)) {
                     ArrayList<Relation> rels = getIncompleteNonCheckedNonCrossingRelationsOf(nd, checkedRels);
-                    //debug("checkable node:" + nd);
                     if (!rels.isEmpty()) {                      // Pick 1st suitable relation if exist, then exit loop
                         node = nd;
                         relation = rels.get(0);
@@ -71,22 +64,17 @@ class Player {
                 }
             }
             if (node == null) {
-                debug("Type E finished: no more nodes to check...");
                 // Revert nodes, relations and output
                 debug("<< reverting state of nodes, relations and output");
                 output.setLength(0); output.append(outputClone);
                 nodes = copyNodes(nodesClone);
                 relations = copyRelations(relationsClone, nodes);
+                debug("Type E finished: giving up, no more nodes to check\n");
                 break;
             }
-            connectTypeE(node, relation, false);                // Establish type E connection
-            connectTypeBCD(false);                              // Establish all possible type B, C and D connections
-            /*if (hasIncompleteNodes()) {
-                debug(getIncompleteNodes().size() + " incomplete nodes remained");
-                debug("incomplete nodes remained:", getIncompleteNodes());
-                debug("stuck nodes remained:", getStuckNodes());
-            }*/
-        }
+            connectTypeE(node, relation, true);                 // Establish type E connection
+            connectTypeBCD(true);                               // Establish all possible type B, C and D connections
+        } // Type E
         
         // If still have incomplete nodes: find all incomplete nodes having 2 missing links and 2 unlinked relations.
         // Link both unlinked relations then establish possible type B-C-D connections to find out if we could finish
@@ -104,7 +92,6 @@ class Player {
             ArrayList<Node> checkedNodesClone;
             while (true) {
                 node = checkedNodes.remove(0);
-                //debug("node before:" + node); debug("relations before:", getRelationsOf(node));
                 // Connect both unlinked relation of node
                 for (Relation relation : getIncompleteUnlinkedRelationsOf(node)) {
                     relation.setLinks(1);
@@ -114,17 +101,17 @@ class Player {
                     output.append(relation.asOutputString()).append("\n");
                 }
                 node.setLinks(node.links() + 2);
-                //debug("node after:" + node); debug("relations after:", getRelationsOf(node));
                 connectTypeBCD(false);                          // Establish all possible type B, C and D connections
-                if (!hasIncompleteNodes() || checkedNodes.isEmpty()) {
-                    debug("Type F finished:" + (!hasIncompleteNodes()? "done" : "no more nodes to check"));
-                    break;
-                }
+                if (!hasIncompleteNodes()) { break; }
                 // Revert nodes, relations and output
                 debug("<< reverting state of nodes, relations and output");
                 output.setLength(0); output.append(outputClone);
                 nodes = copyNodes(nodesClone);
-                relations = copyRelations(relationsClone, nodes);
+                relations = copyRelations(relationsClone, nodes);                
+                if (checkedNodes.isEmpty()) {
+                        debug("Type F finished: giving up, no more nodes to check\n");
+                        break;
+                }
                 // Rebuild checkedNodes list from new nodes
                 checkedNodesClone = copyNodes(checkedNodes);
                 checkedNodes.clear();
@@ -132,35 +119,48 @@ class Player {
                     checkedNodes.add(nodes.get(nodes.indexOf(nd)));
                 }
             }
+        } // Type F
+        
+        // If still have incomplete nodes, it should be 'CG' or 'Multiple solutions 2'
+        
+        // Solve 'Multiple solutions 2'
+        if (hasIncompleteNodes()) {
+            debug("Solving 'Multiple solutions 2' started");            
+            connectTypeD(4, 4, true);                           // Estab. D conns w/ 4 aimed links & 4 unlinked relations
+            connectTypeBCD(false);                              // Establish all possible type B, C and D connections
         }
-        debug("output:");                                       // Two coords and an int: a node, one of its
+        if (hasIncompleteNodes()) {
+            debug("\nSolving 'CG' started");
+        }
+        
+        debug("\noutput:");                                     // Two coords and an int: a node, one of its
         System.out.println(output.toString());                  // neighbors, number of links connecting them
-    } // main() ------------------------------------------------------------------------------------------------------
+    } // main() ########################################################################################################
 
     // A: Connect nodes where single or double links possible to all neighbors
-    static void connectTypeA() {
+    static void connectTypeA(boolean canDisplay) {
         boolean connect;
         do {
             Node node;
             connect = false;
             // Connect nodes where double links needed to all neighbors
             if ((node = getMatchingNode(8, 4)) != null) {       // Get 1st incomplete node matching aimed links& neighbors
-                incrementLinksTo(2, node); connect = true;      // Increment links of node,all its neighbors & connections
+                incrementLinksTo(2, node, canDisplay); connect = true; // Inc.links of node,all its neighbors& connections
             } else if ((node = getMatchingNode(6, 3)) != null) {
-                incrementLinksTo(2, node); connect = true;
+                incrementLinksTo(2, node, canDisplay); connect = true;
             } else if ((node = getMatchingNode(4, 2)) != null) {
-                incrementLinksTo(2, node); connect = true;
+                incrementLinksTo(2, node, canDisplay); connect = true;
             } else if ((node = getMatchingNode(2, 1)) != null) {
-                incrementLinksTo(2, node); connect = true;
+                incrementLinksTo(2, node, canDisplay); connect = true;
             // Connect nodes where at least single link possible to all neighbors
             } else if ((node = getMatchingNode(7, 4)) != null) {
-                incrementLinksTo(1, node); connect = true;
+                incrementLinksTo(1, node, canDisplay); connect = true;
             } else if ((node = getMatchingNode(5, 3)) != null) {
-                incrementLinksTo(1, node); connect = true;
+                incrementLinksTo(1, node, canDisplay); connect = true;
             } else if ((node = getMatchingNode(3, 2)) != null) {
-                incrementLinksTo(1, node); connect = true;
+                incrementLinksTo(1, node, canDisplay); connect = true;
             } else if ((node = getMatchingNode(1, 1)) != null) {
-                incrementLinksTo(1, node); connect = true;
+                incrementLinksTo(1, node, canDisplay); connect = true;
             }
         } while (connect);                                      // Until connection ocured
     }
@@ -168,7 +168,6 @@ class Player {
     // B: Connect nodes that only one incomplete relation left
     // Return number of established connections    
     static int connectTypeB(boolean canDisplay) {
-        //if (canDisplay) { debug("Type B"); }
         boolean connect;
         int connections = 0;
         do {
@@ -185,7 +184,6 @@ class Player {
                 Node node = singleIncompleteRelationNodes.get(0); // Pick first node
                 Relation relation =
                     getIncompleteNonCrossedRelationsOf(node).get(0); // Should be only one
-                //debug("connecting " + relation);
                 Node neighbor = relation.getNeighbor(node);
                 int relationLinks = relation.getLinks();
                 int increment = (int)Math.min(Math.min          // Determine possible link increment,limiting it to 2
@@ -207,7 +205,6 @@ class Player {
     // that 2 relations left with 1-1 missing link
     // Return number of established connections
     static int connectTypeC(boolean canDisplay) {
-        //if (canDisplay) { debug("E level"); }
         int connections = 0;
         for (Node node : nodes) {
             if (node.missingLinks() == 2) {                     // Find nodes having 2 missing links - Note: these nodes
@@ -223,7 +220,6 @@ class Player {
                     node.setLinks(node.links() + 2);
                     for (Relation relation : rels) {            // Let's connect both neighbors with second link
                         Node neighbor = relation.getNeighbor(node);
-                        //debug("connecting " + relation);
                         if (canDisplay) { debug("C out:" + relation.asOutputString()); }
                         output.append(relation.asOutputString()).append("\n");
                         neighbor.setLinks(neighbor.links() + 1);
@@ -240,7 +236,6 @@ class Player {
     // links that has 'unlinked' non-crossed, unlinked relations left
     // Return number of established connections
     static int connectTypeD(int aimed, int unlinked, boolean canDisplay) {
-        //if (canDisplay) { debug("Type D (" + aimed + "-" + unlinked + "-1)"); }
         int connections = 0;
         for (Node node : nodes) {
             if (!node.isComplete() && node.aimedLinks() == aimed && node.isUnlinked()) {
@@ -257,8 +252,9 @@ class Player {
                         relation.setLinks(1);
                         Node neighbor = relation.getNeighbor(node);
                         neighbor.setLinks(neighbor.links() + 1);
-                        //debug("connecting " + relation);
-                        if (canDisplay) { debug("D out:" + relation.asOutputString()); }
+                        if (canDisplay) { 
+                            debug("D (" + aimed + "-" + unlinked + "-1) out:" + relation.asOutputString());
+                        }
                         output.append(relation.asOutputString()).append("\n");
                     }
                     connections += unlinked;
@@ -271,6 +267,7 @@ class Player {
     // B-C-D: Establish possible Type B, C and D connections
     // until there is at least 1 new connection from any type
     static void connectTypeBCD(boolean canDisplay) {
+        if (canDisplay) { debug("Type B+C+D started"); }
         int connections;
         do {
             connections = 0;
@@ -278,18 +275,16 @@ class Player {
             if (hasIncompleteNodes()) { connections += connectTypeC(canDisplay); }
             if (hasIncompleteNodes()) { connections += connectTypeD(3, 2, canDisplay); }
             if (hasIncompleteNodes()) { connections += connectTypeD(5, 3, canDisplay); }
-            if (canDisplay) {
+            /*if (canDisplay) {
                 debug("Type B+C+D: " + connections + " connections established - " +
-                    (connections > 0 ? "new B-C-D round" : "moving ahead"));
-            }
+                    (connections > 0 ? "new round" : "finished"));
+            }*/
         } while (connections > 0);
     }
 
     // E: Complete an incomplete non-crossing relation
     // of node with maximum number of links
     static void connectTypeE(Node node, Relation relation, boolean canDisplay) {
-        //if (canDisplay) { debug("Type E"); }
-        //debug("connecting " + relation);
         Node neighbor = relation.getNeighbor(node);
         int relationLinks = relation.getLinks();
         int increment = (int)Math.min(Math.min                  // Determine possible link increment,limiting it to 2
@@ -341,10 +336,7 @@ class Player {
 
     // Increment links of specified node, all its neighbors
     // and connections to the specified value
-    static void incrementLinksTo(int increment, Node node) {
-        /*debug((node.aimedLinks() % 2 == 0 ? "A" : "B") + " found " +
-            node.aimedLinks() + "," + node.neighbors() + "," + increment +
-            " [aim,nb,inc] in node:" + node);*/
+    static void incrementLinksTo(int increment, Node node, boolean canDisplay) {
         // Determine incomplete relations of node that have less links than increment
         ArrayList<Relation> specifiedRelations = new ArrayList<>(); // NOTE: may remains empty if not found such ones
         for (Relation relation : relations) {
@@ -358,8 +350,7 @@ class Player {
             Node neighbor = relation.getNeighbor(node);
             neighbor.setLinks(neighbor.links() + increment);
             relation.setLinks(increment - relation.getLinks()); // Incrementing just 1 if relation has a single link
-            /*debug((node.aimedLinks() % 2 == 0 ? "A" : "B") +
-                " out:" + relation.asOutputString());*/
+            if (canDisplay) { debug("A out:" + relation.asOutputString()); }
             output.append(relation.asOutputString()).append("\n");
             relation.setLinks(increment);
         }
@@ -700,7 +691,6 @@ class Relation implements Comparable<Relation> {
     public boolean  isComplete()   { return nodeA.isComplete() ||
                                            nodeB.isComplete() || links == 2; }
     public boolean  isVertical()   { return nodeA.getX() == nodeB.getX(); }
-    //public boolean  isHorizontal() { return nodeA.getY() == nodeB.getY(); }
     public boolean  isCrossable()  { return crossable; }
     public boolean  isUnlinked()   { return links == 0; }
 

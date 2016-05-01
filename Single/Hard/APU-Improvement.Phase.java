@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1020c (Tests 1-10 passed, Expert:94 steps) 70%
+// APU:Improvement Phase 1021a (Tests 1-10 passed, Expert:94 steps) 70%
 import java.util.*;
 
 class Player {
@@ -46,57 +46,57 @@ class Player {
         connectCEFlevels(false);                                // Establish all possible C, E and F level connections
         //displayGrid("\n", 2, "\n");     
         // Conserve lists for reverting their states if necessary
-        debug(hasIncompleteNodes() ? ">> conserving state of nodes,relations and output" : "done!");
+        //debug(hasIncompleteNodes() ? ">> conserving state of nodes,relations and output" : "done!");
         String outputClone = output.toString();
         ArrayList<Node> nodesClone = nodes;
         ArrayList<Relation> relationsClone = relations;
 
         ArrayList<Node> checkedNodes = new ArrayList<>();       // Store nodes with missing links that were already checked
         ArrayList<Relation> checkedRels = new ArrayList<>();    // Store relations that were already checked
-        debug("\nROUND 1...");        
-        while (true) {
-            if (hasIncompleteNodes()) {                         // We should establish a D level connection
-                //debug("\nROUND 1...");
-                // Revert nodes, relations and output
-                //debug("<< reverting state of nodes, relations and output");
-                output.setLength(0); output.append(outputClone);
-                nodes = copyNodes(nodesClone);
-                relations = copyRelations(relationsClone, nodes);
-                // ######################################################################################################
-                // Get a checkable node and relation
-                Node node = null;                               // Checkable node
-                Relation relation = null;                       // Checkable relation
-                for (int missing = 1; missing < 7 && node == null; ++missing) {
-                    for (Node nd : getIncompleteNonCheckedNodesMissingLinks(missing, checkedNodes)) {
-                        ArrayList<Relation> rels = getIncompleteNonCheckedNonCrossingRelationsOf(nd, checkedRels);
-                        //debug("checkable node:" + nd);
-                        if (!rels.isEmpty()) {                  // Pick 1st suitable relation if exist, then exit loop
-                            node = nd;
-                            relation = rels.get(0);
-                            checkedRels.add(new Relation(relation, nodes));
-                            if (rels.size() == 1) { checkedNodes.add(new Node(nd)); }
-                            break;
-                        } else {                                // If no suitable relations, store node and pick next one
-                            checkedNodes.add(new Node(nd));
-                        }
+        debug("\nROUND 1 started");        
+        while (hasIncompleteNodes()) {                          // We should establish a D level connection
+            //debug("\nROUND 1 started");
+            // Revert nodes, relations and output
+            //debug("<< reverting state of nodes, relations and output");
+            output.setLength(0); output.append(outputClone);
+            nodes = copyNodes(nodesClone);
+            relations = copyRelations(relationsClone, nodes);
+            // Get a checkable node and relation
+            Node node = null;                                   // Checkable node
+            Relation relation = null;                           // Checkable relation
+            for (int missing = 1; missing < 7 && node == null; ++missing) {
+                for (Node nd : getIncompleteNonCheckedNodesMissingLinks(missing, checkedNodes)) {
+                    ArrayList<Relation> rels = getIncompleteNonCheckedNonCrossingRelationsOf(nd, checkedRels);
+                    //debug("checkable node:" + nd);
+                    if (!rels.isEmpty()) {                      // Pick 1st suitable relation if exist, then exit loop
+                        node = nd;
+                        relation = rels.get(0);
+                        checkedRels.add(new Relation(relation, nodes));
+                        if (rels.size() == 1) { checkedNodes.add(new Node(nd)); }
+                        break;
+                    } else {                                    // If no suitable relations, store node and pick next one
+                        checkedNodes.add(new Node(nd));
                     }
                 }
-                if (node == null) { output.append("FUCK!!! There are no more nodes to check"); break; }
-                connectDlevel(node, relation, false);            // Complete an incomplete non-crossing relation of node            
-                connectCEFlevels(false);                         // Establish all possible C, E and F level connections
-                if (hasIncompleteNodes()) {
-                    debug(getIncompleteNodes().size() + " incomplete nodes remained");
-                    //debug("incomplete nodes remained:", getIncompleteNodes());
-                    //debug("stuck nodes remained:", getStuckNodes());
-                }
-            } else {
+            }
+            if (node == null) {
+                debug("ROUND 1 finished: no more nodes to check...");
                 break;
             }
+            connectDlevel(node, relation, false);               // D: Complete an incomplete non-crossing relation of node            
+            connectCEFlevels(false);                            // Establish all possible C, E and F level connections
+            if (hasIncompleteNodes()) {
+                //debug(getIncompleteNodes().size() + " incomplete nodes remained");
+                //debug("incomplete nodes remained:", getIncompleteNodes());
+                //debug("stuck nodes remained:", getStuckNodes());
+            }
         }
+        // If still have incomplete nodes: find all incomplete nodes having 2 missing links and 2 unlinked relations.
+        // Link both unlinked relations then establish possible C-E-F level connections to find out if we could finish
         if (hasIncompleteNodes()) {
-            debug("ROUND 2");
+            debug("G level started");
             // Revert nodes, relations and output
-            debug("<< reverting state of nodes, relations and output");
+            //debug("<< reverting state of nodes, relations and output");
             output.setLength(0); output.append(outputClone);
             nodes = copyNodes(nodesClone);
             relations = copyRelations(relationsClone, nodes);            
@@ -109,9 +109,33 @@ class Player {
                     checkedNodes.add(node);
                 }
             }
-            debug("nodes that should be checked:", checkedNodes);
+            /*for (Node node : checkedNodes) {
+                debug("checking node:" + node);
+                // Conserve state of nodes,relations and output
+                outputClone = output.toString();
+                nodesClone = nodes;
+                relationsClone = relations;
+                // Connect both unlinked relation of node
+                for (Relation relation : getIncompleteUnlinkedRelationsOf(node)) {
+                    relation.setLinks(1);
+                    Node neighbor = relation.getNeighbor(node);
+                    neighbor.setLinks(neighbor.links() + 1);
+                    //debug("connecting " + relation);
+                    debug("G out:" + relation.asOutputString());
+                    output.append(relation.asOutputString()).append("\n");
+                }
+                node.setLinks(node.links() + 2);
+                connectCEFlevels(true);                         // Establish all possible C, E and F level connections
+                if (!hasIncompleteNodes()) {
+                    debug("G level finished");
+                    break;
+                }
+                // Revert nodes, relations and output
+                output.setLength(0); output.append(outputClone);
+                nodes = copyNodes(nodesClone);
+                relations = copyRelations(relationsClone, nodes);
+            }*/
         }
-        
         debug("output:");                                       // Two coords and an int: a node, one of its
         System.out.println(output.toString());                  // neighbors, number of links connecting them
     } // main() ------------------------------------------------------------------------------------------------------
@@ -404,17 +428,16 @@ class Player {
     }
 
     // Return incomplete, unlinked relations of a node - or empty list of no such
-    static ArrayList<Node> getIncompleteUnlinkedRelationsOf(Node node) {
-        ArrayList<Node> result = new ArrayList<>();
+    static ArrayList<Relation> getIncompleteUnlinkedRelationsOf(Node node) {
+        ArrayList<Relation> result = new ArrayList<>();
         for (Relation relation : relations) {
             if (relation.hasNode(node) && !relation.isComplete() &&
               relation.isUnlinked()) {
-                result.add(node);
+                result.add(relation);
             }
         }
         return result;
     }
-
 
     // Return incomplete non-crossed relations
     // of node - or empty list if none found

@@ -1,4 +1,4 @@
-// APU:Improvement Phase 1022a (Tests 1-10 passed, Expert:99 steps) 70%
+// APU:Improvement Phase 1023a (Tests 1-10, 13 passed) 85%
 import java.util.*;
 
 class Player {
@@ -101,8 +101,7 @@ class Player {
         // Link both unlinked relations then establish possible C-E-F level connections to find out if we could finish
         if (hasIncompleteNodes()) {
             debug("G level started");
-            // Collect those incomplete nodes to 'checkNodes' list
-            // that have 2 missing links and 2 unlinked relations
+            // Collect candidates to 'checkNodes' list
             checkedNodes.clear();
             for (Node node : nodes) {
                 if (!node.isComplete() && node.missingLinks() == 2 &&
@@ -110,7 +109,10 @@ class Player {
                     checkedNodes.add(node);
                 }
             }
-            for (Node node : checkedNodes) {
+            Node node;
+            ArrayList<Node> checkedNodesClone;
+            while (true) {
+                node = checkedNodes.remove(0);
                 debug("node before:" + node);
                 //debug("relations before:", getIncompleteUnlinkedRelationsOf(node));
                 debug("relations before:", getRelationsOf(node));
@@ -126,8 +128,8 @@ class Player {
                 debug("node after:" + node);
                 debug("relations after:", getRelationsOf(node));
                 connectCEFlevels(true);                         // Establish all possible C, E and F level connections
-                if (!hasIncompleteNodes()) {
-                    debug("G level finished");
+                if (!hasIncompleteNodes() || checkedNodes.isEmpty()) {
+                    debug("G level finished:" + (!hasIncompleteNodes()? "done" : "no more nodes to check"));
                     break;
                 }
                 // Revert nodes, relations and output
@@ -135,6 +137,12 @@ class Player {
                 output.setLength(0); output.append(outputClone);
                 nodes = copyNodes(nodesClone);
                 relations = copyRelations(relationsClone, nodes);
+                
+                checkedNodesClone = copyNodes(checkedNodes);
+                checkedNodes.clear();
+                for (Node nd : checkedNodesClone) {
+                    checkedNodes.add(nodes.get(nodes.indexOf(nd)));
+                }
             }
         }
         debug("output:");                                       // Two coords and an int: a node, one of its
@@ -639,6 +647,7 @@ class Node {
     @Override public String toString() {
         return x + "," + y + " (links:" + links + ", aimed:" +
         aimedLinks + ", neighbors:" + neighbors + ")";
+        //aimedLinks + ", neighbors:" + neighbors + ", ID:" + System.identityHashCode(this) + ")";
     }
 
     public int  getX()                   { return x; }

@@ -1,12 +1,12 @@
 ## CodinGame
 
-This repo contains my solutions for solo puzzles at [CodinGame](https://www.codingame.com/), mostly in Java, some in PHP as well.
+This repo contains my solutions for classic (single/solo) puzzles at [CodinGame](https://www.codingame.com/), mostly in Java, some in PHP as well.
 
 You will also find a few basic endeavors on other, open ended puzzle types like multiplayer AI challenges, contests and optimizations (eg. code golfing).
 
 The code quality is far from high standard: i usually just achieved to make them work, so it lacks any effort on design, however comments may help you understand how it works.
 
-### Solo puzzles
+### Classic Puzzles
 
 #### TUTORIAL
 * Onboarding - [Java](/Single/Easy/Onboarding.java), [PHP](/Single/Easy/Onboarding.php)
@@ -44,3 +44,15 @@ The code quality is far from high standard: i usually just achieved to make them
 
 #### :star::star::star: HARD
 * APU: Improvement Phase - [Java](/Single/Hard/APU-Improvement.Phase.java)
+
+
+### Multiplayer Puzzles
+
+#### CODE GOLF
+* Don't Panic - [Java](/Single/Optimization/The.Paranoid.Android.java) ([readable version](/Single/Optimization/The.Paranoid.Android_source.java))
+* Power of Thor - [Java](/Single/Optimization/Power.of.Thor.java) ([readable version](/Single/Optimization/Power.of.Thor_source.java))
+
+#### OPTIMIZATION
+* Mars Lander - [Java](/Single/Optimization/Mars.Lander-Fuel.optimization.java)
+* Code of the Rings - [Java](/Contests/Code.of.the.Rings.java)
+* Tron Battle - [Java](/Multi/Tron.java)
